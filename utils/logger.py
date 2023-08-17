@@ -1,11 +1,13 @@
 """
+Logging Utility Module for FastAPI
 Author: Yi-Ting Li
 Email: yitingli.public@gmail.com
 Date Created: 2023-08-17
 Last Modified: 2023-08-17
-Description: This script is a logging utility that configures
-             log output for the application.
+
+This script is a logging utility that configures log output for the application.
 """
+
 import logging
 import sys
 from pprint import pformat
@@ -22,11 +24,10 @@ class InterceptHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord):
         """
-        Override of logging.Handler emit function. Captures a logging.LogRecord
-        object and forwards it as a loguru log record.
+        Captures a logging.LogRecord object and forwards it as a loguru log record.
 
-        Parameters:
-        record (logging.LogRecord): The record to be logged.
+        Args:
+            record (logging.LogRecord): The record to be logged.
         """
         try:
             level = logger.level(record.levelname).name
@@ -48,11 +49,11 @@ def format_record(record: dict) -> str:
     """
     Format the log record dictionary to a string suitable for logging output.
 
-    Parameters:
-    record (dict): The log record to be formatted, in dict form.
+    Args:
+        record (dict): The log record to be formatted, in dict form.
 
     Returns:
-    str: The formatted log record string.
+        str: The formatted log record string.
     """
     format_string = LOGURU_FORMAT
 
@@ -69,8 +70,9 @@ def format_record(record: dict) -> str:
 
 def init_logging():
     """
-    Initialize logging configuration. Sets up the InterceptHandler to redirect
-    uvicorn logs through loguru and configures the loguru logger output format.
+    Initialize logging configuration.
+    Sets up the InterceptHandler to redirect uvicorn logs through loguru
+    and configures the loguru logger output format.
     """
     # Get all loggers that start with "uvicorn."
     loggers = (
