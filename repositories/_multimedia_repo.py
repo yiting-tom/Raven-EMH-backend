@@ -30,6 +30,7 @@ class MultimediaRepo(BaseRepo):
     Attributes:
         grid_fs (GridFS): An instance of GridFS for handling file storage.
     """
+
     COLLECTION_NAME = "multimedia"
 
     def __init__(self, database: Database, collection: Collection, grid_fs: GridFS):
