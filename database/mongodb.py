@@ -12,7 +12,10 @@ connection, and closing the connection using FastAPI event handlers.
 import os
 
 from fastapi import FastAPI
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import MongoClient
+from pymongo.database import Database
+from pymongo.collection import Collection
+from gridfs import GridFS
 
 from utils.logger import logger
 
@@ -28,13 +31,14 @@ class MongoDB:
         Initializes an instance of the MongoDB client.
         Uses environment variables for the host, port, username, password, and database name.
         """
-        self.client = AsyncIOMotorClient(
+        self.client = MongoClient(
             host=os.getenv("DB_HOST"),
             port=int(os.getenv("DB_PORT")),
             username=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD"),
         )
         self.database = self.client[os.getenv("DB_NAME")]
+        self.grid_fs = GridFS(self.database)
 
     def test_connection(self) -> bool:
         """
@@ -56,6 +60,38 @@ class MongoDB:
         Closes the connection to the MongoDB server.
         """
         self.client.close()
+
+    @property
+    def get_database(self) -> Database:
+        """
+        Exposes the MongoDB database instance.
+
+        Returns:
+            Database: The MongoDB database instance.
+        """
+        return self.database
+    
+    @property
+    def get_gridfs(self) -> GridFS:
+        """
+        Exposes the MongoDB GridFS instance.
+
+        Returns:
+            GridFS: The MongoDB GridFS instance.
+        """
+        return self.grid_fs
+
+    def get_collection(self, name: str) -> Collection:
+        """
+        Exposes a MongoDB collection instance for a given collection name.
+
+        Args:
+            name (str): Name of the collection.
+
+        Returns:
+            Collection: The MongoDB collection instance.
+        """
+        return self.database[name]
 
 
 class MongoDBConnector:
