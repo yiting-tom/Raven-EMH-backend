@@ -14,8 +14,10 @@ Classes:
 
 from abc import ABC, abstractmethod
 from typing import Any, Generic, List, Optional, TypeVar
-from pymongo.database import Database
+
 from pymongo.collection import Collection
+from pymongo.database import Database
+
 from utils.logger import logger
 
 T = TypeVar("T")
@@ -25,6 +27,7 @@ class IdNotFoundError(Exception):
     """
     Raised when the id of the data to be retrieved is not found.
     """
+
     pass
 
 
@@ -38,7 +41,7 @@ class BaseRepo(ABC, Generic[T]):
         db (Database): The database connection object.
         collection (Collection): The MongoDB collection object associated with the repository.
     """
-    
+
     def __init_subclass__(cls, **kwargs):
         """
         Ensure that subclasses define a COLLECTION_NAME class variable.
@@ -52,7 +55,7 @@ class BaseRepo(ABC, Generic[T]):
     def __init__(self, db: Database, *args, **kwargs):
         """
         Initialize the repository with the given database.
-        
+
         Args:
             db (Database): The database connection object.
         """
@@ -72,10 +75,10 @@ class BaseRepo(ABC, Generic[T]):
     def create(self, data: T) -> Any:
         """
         Save the given data.
-        
+
         Args:
             data (T): The data to be saved.
-        
+
         Returns:
             Any: The saved data object.
         """
@@ -85,10 +88,10 @@ class BaseRepo(ABC, Generic[T]):
     def find_by_id(self, id: Any) -> Optional[T]:
         """
         Retrieve data by its id.
-        
+
         Args:
             id (Any): The id of the data to be retrieved.
-        
+
         Returns:
             Optional[T]: The retrieved data object, or None if not found.
         """
@@ -98,7 +101,7 @@ class BaseRepo(ABC, Generic[T]):
     def find_all(self) -> List[T]:
         """
         Retrieve all data.
-        
+
         Returns:
             List[T]: A list of all the retrieved data objects.
         """
@@ -108,7 +111,7 @@ class BaseRepo(ABC, Generic[T]):
     def update(self, id: Any, updated_data: T) -> None:
         """
         Update data with the given id using the provided updated data.
-        
+
         Args:
             id (Any): The id of the data to be updated.
             updated_data (T): The new data to update the existing data with.
@@ -119,7 +122,7 @@ class BaseRepo(ABC, Generic[T]):
     def delete(self, id: Any) -> None:
         """
         Delete data with the given id.
-        
+
         Args:
             id (Any): The id of the data to be deleted.
         """
@@ -129,13 +132,13 @@ class BaseRepo(ABC, Generic[T]):
     def _id2str(data: dict) -> dict:
         """
         Convert the _id field of the given data from ObjectId to str.
-        
+
         Args:
             data (dict): The data object containing the _id field.
-        
+
         Returns:
             dict: The updated data object with _id converted to a string and renamed to "id".
-            
+
         Raises:
             Exception: If the data object does not have an _id field.
         """

@@ -14,4 +14,4 @@ Imports:
     - MultimediaInDB: Model for representing a multimedia object stored in the database.
 """
 
-from models._multimedia import MultimediaCreate, MultimediaInDBOutput, MultimediaInDB
+from models._multimedia import MultimediaCreate, MultimediaInDB, MultimediaInDBOutput

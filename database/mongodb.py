@@ -13,11 +13,12 @@ Author:
 """
 
 import os
+
 from fastapi import FastAPI
-from pymongo import MongoClient
-from pymongo.database import Database
-from pymongo.collection import Collection
 from gridfs import GridFS
+from pymongo import MongoClient
+from pymongo.collection import Collection
+from pymongo.database import Database
 
 from utils.logger import logger
 
@@ -72,7 +73,7 @@ class MongoDB:
             Database: The MongoDB database instance.
         """
         return self.database
-    
+
     @property
     def get_gridfs(self) -> GridFS:
         """
