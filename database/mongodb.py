@@ -4,12 +4,15 @@ database/mongodb_connection.py
 This module contains classes for connecting to MongoDB, testing the connection,
 and closing the connection using FastAPI event handlers.
 
+Classes:
+    - MongoDB: Represents a MongoDB client for connection management and connectivity testing.
+    - MongoDBConnector: Manages the integration of MongoDB with a FastAPI application.
+
 Author:
     Yi-Ting Li (yitingli.public@gmail.com)
 """
 
 import os
-
 from fastapi import FastAPI
 from pymongo import MongoClient
 from pymongo.database import Database
