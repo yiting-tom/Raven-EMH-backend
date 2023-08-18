@@ -1,12 +1,11 @@
 """
-MongoDB Connection Module for FastAPI
-Author: Yi-Ting Li
-Email: yitingli.public@gmail.com
-Date Created: 2023-08-17
-Last Modified: 2023-08-17
+database/mongodb_connection.py
 
-This module contains classes for connecting to MongoDB, testing the
-connection, and closing the connection using FastAPI event handlers.
+This module contains classes for connecting to MongoDB, testing the connection,
+and closing the connection using FastAPI event handlers.
+
+Author:
+    Yi-Ting Li (yitingli.public@gmail.com)
 """
 
 import os
