@@ -1,24 +1,19 @@
 """
-repositories/__init__.py
+repositories.__init__.py
 
-This module initializes the `repositories` package and exposes the relevant
-classes and exceptions that are defined in the underlying modules. The
-`repositories` package contains classes that handle interactions between
-the FastAPI application and the database, effectively acting as the data
-access layer of the application.
+This module initializes the `repositories` package and provides direct access 
+to its core classes and exceptions. These repositories handle interactions 
+between the FastAPI application and the underlying database.
 
 Author:
     Yi-Ting Li (yitingli.public@gmail.com)
 
-Exports:
-    - IdNotFoundError: Exception raised when a requested ID is not found in the database.
-    - MultimediaRepo: Repository class for handling CRUD operations related to
-                      multimedia objects in the database.
+Imports:
+    - IdNotFoundError: Exception raised when an ID is not found in the database.
+    - ChatRepo: Repository for handling database interactions related to chat objects.
+    - MultimediaRepo: Repository for handling database interactions related to multimedia objects.
 """
 
 from repositories._base_repo import IdNotFoundError
+from repositories._chat_repo import ChatRepo
 from repositories._multimedia_repo import MultimediaRepo
-
-# The IdNotFoundError exception and the MultimediaRepo class are now exposed
-# at the package level, allowing them to be imported directly from `repositories`
-# instead of from the underlying modules.
