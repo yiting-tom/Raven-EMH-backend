@@ -19,17 +19,24 @@ Usage:
 """
 
 import os
+
 from dotenv import load_dotenv
-from fastapi import FastAPI
-from database.mongodb import MongoDBConnector
-from middlewares.cors_middleware import add_middleware
-from routes.multimedia import router as multimedia_router
-from utils.logger import init_logging
 
 # Load environment variables
 # The file name is determined based on the ENV environment variable
 env_fname = f".env.{os.getenv('ENV')}" if os.getenv("ENV") else ".env"
 load_dotenv(env_fname)
+
+from fastapi import FastAPI
+
+from database.mongodb import MongoDBConnector
+from middlewares.cors_middleware import add_middleware
+from routes.chat import router as chat_router
+
+# from routes.multimedia import router as multimedia_router
+from routes.feedback import router as feedback_router
+from routes.user import router as user_router
+from utils.logger import init_logging
 
 # Initialize FastAPI application
 # The debug mode and title are set based on environment variables
@@ -55,13 +62,16 @@ add_middleware(app)
 # Add routes
 # Route handlers are registered with the FastAPI application instance
 # using the include_router method
-app.include_router(multimedia_router, prefix="/multimedia", tags=["multimedia"])
+# app.include_router(multimedia_router, prefix="/multimedia", tags=["multimedia"])
+app.include_router(chat_router, prefix="/chat", tags=["chat"])
+app.include_router(feedback_router, prefix="/feedback", tags=["feedback"])
+app.include_router(user_router, prefix="/user", tags=["user"])
 
 # This block checks if this script is run directly and not imported as a module
 # If run directly, it will use Uvicorn to run the FastAPI application
 if __name__ == "__main__":
     import uvicorn
-    
+
     uvicorn.run(
         "main:app",
         host="0.0.0.0",

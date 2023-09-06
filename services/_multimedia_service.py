@@ -14,6 +14,8 @@ Classes:
 
 from typing import Any, Dict, List, Optional
 
+from loguru import logger
+
 from models import MultimediaCreate, MultimediaInDB, MultimediaInDBOutput
 from repositories import IdNotFoundError, MultimediaRepo
 from utils import converter
@@ -47,6 +49,7 @@ class MultimediaService:
             MultimediaInDB: The created multimedia multimedia's metadata with its PyObjectId.
         """
         multimedia_in_db: MultimediaInDB = self.repo.create(data)
+        logger.info(f"Multimedia created: {multimedia_in_db.keys()}")
         return self.__convert_indb_to_indboutput(multimedia_in_db)
 
     def get_multimedia_by_id(self, id: str) -> Optional[MultimediaInDBOutput]:
@@ -89,18 +92,20 @@ class MultimediaService:
         self.repo.delete(id)
 
     @staticmethod
-    def __convert_indb_to_indboutput(multimedia_in_db: MultimediaInDB) -> MultimediaInDBOutput:
+    def __convert_indb_to_indboutput(
+        multimedia_in_db: MultimediaInDB,
+    ) -> MultimediaInDBOutput:
         ...
         # Prepare the dictionary representation of the MultimediaInDB instance
         multimedia_dict: Dict[str, Any] = multimedia_in_db.model_dump()
-        
+
         # Convert the "_id" field to "id"
         multimedia_dict["id"] = str(multimedia_dict["_id"])
-        
+
         # Convert the binary file data to a base64 encoded string
         multimedia_dict["file_data"] = converter.bytes2base64(
             multimedia_dict["file_data"]
         )
-        
+
         # Create and return a MultimediaInDBOutput instance from the prepared dictionary
         return MultimediaInDBOutput(**multimedia_dict)

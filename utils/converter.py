@@ -16,16 +16,17 @@ Functions:
 """
 
 import base64
+
 from bson import Binary
 
 
 def bytes2base64(source: bytes) -> str:
     """
     Converts binary data to a base64 encoded string.
-    
+
     Parameters:
         source (bytes): The binary data to be encoded.
-    
+
     Returns:
         str: The base64 encoded string representation of the input binary data.
     """
@@ -35,10 +36,10 @@ def bytes2base64(source: bytes) -> str:
 def base642bytes(source: str) -> bytes:
     """
     Converts a base64 encoded string back to binary data.
-    
+
     Parameters:
         source (str): The base64 encoded string.
-    
+
     Returns:
         bytes: The decoded binary data.
     """
@@ -48,10 +49,10 @@ def base642bytes(source: str) -> bytes:
 def bytes2bson(source: bytes) -> Binary:
     """
     Converts binary data to a BSON binary data format.
-    
+
     Parameters:
         source (bytes): The binary data to be converted.
-    
+
     Returns:
         Binary: The BSON binary data format of the input binary data.
     """
@@ -61,11 +62,11 @@ def bytes2bson(source: bytes) -> Binary:
 def bytes2file(source: bytes, filename: str) -> str:
     """
     Writes binary data to a file.
-    
+
     Parameters:
         source (bytes): The binary data to be written to a file.
         filename (str): The name of the file to which the data should be written.
-    
+
     Returns:
         str: The name of the file where the data was written.
     """
@@ -77,11 +78,11 @@ def bytes2file(source: bytes, filename: str) -> str:
 def file2bytes(filename: str, mode: str = "rb") -> bytes:
     """
     Reads binary data from a file.
-    
+
     Parameters:
         filename (str): The name of the file from which to read the data.
         mode (str): The mode in which the file should be opened. Defaults to 'rb' (read binary).
-    
+
     Returns:
         bytes: The binary data read from the file.
     """

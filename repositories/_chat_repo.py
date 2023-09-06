@@ -21,6 +21,7 @@ from models._chat import ChatCreate, ChatInDB, ChatUpdate
 from repositories._base_repo import BaseRepo, IdNotFoundError
 from utils.logger import logger
 
+
 class ChatRepo(BaseRepo):
     """
     Repository for handling database interactions related to chat objects.
@@ -120,3 +121,22 @@ class ChatRepo(BaseRepo):
         """
         self.collection.delete_one({"_id": ObjectId(id)})
         logger.info(f"Chat {id} deleted")
+
+    def find_by_user_id(self, user_id: str, query: Optional[Dict] = None):
+        """
+        Retrieve all chat objects by user ID.
+
+        Args:
+            user_id (str): The ID of the user.
+
+        Returns:
+            List[ChatInDB]: A list of all chat objects by user ID.
+        """
+        query = query or {}
+        query["user_id"] = user_id
+        result = [
+            ChatInDB(**self._id2str(chat_in_db))
+            for chat_in_db in self.collection.find(query)
+        ]
+        logger.info(f"Chat found {len(result)}")
+        return result

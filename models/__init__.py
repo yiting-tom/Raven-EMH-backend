@@ -14,4 +14,13 @@ Imports:
     - MultimediaInDB: Model for representing a multimedia object stored in the database.
 """
 
+from models._chat import (
+    ChatCreate,
+    ChatCreateInput,
+    ChatInDB,
+    ChatInDBOutput,
+    ChatUpdate,
+    Status,
+)
 from models._multimedia import MultimediaCreate, MultimediaInDB, MultimediaInDBOutput
+from models._feedback import FeedbackCreate, FeedbackInDB, FeedbackUpdate
