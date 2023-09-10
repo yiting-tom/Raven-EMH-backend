@@ -178,6 +178,6 @@ evaluation/test_filelists/lr*.txt
 *.gif
 *.webm
 *.mp3
-.env.dev
-.env.local
+.env.*
+!.env.example
 Wav2Lip/temp/*
