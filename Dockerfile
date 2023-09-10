@@ -32,7 +32,7 @@ RUN git clone https://github.com/yiting-tom/Raven-EMH-backend.git /workspace
 
 # Install Python requirements
 RUN pip3 install --upgrade setuptools
-RUN pip3 install -r torch torchvision python-dotenv firebase_admin fastapi uvicorn pymongo loguru openai boto3 pydantic\[email\] librosa numpy opencv-contrib-python opencv-python tqdm numba gdown
+RUN pip3 install -r requirements.txt
 
 # Copy init script for mongodb
 COPY scripts/init_mongodb.sh /usr/local/bin/init_mongodb.sh
