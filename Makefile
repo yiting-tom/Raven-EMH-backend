@@ -2,10 +2,7 @@ dev:
 	CUDA_VISIBLE_DEVICES=0 ENV=dev python3 main.py
 
 docker_build:
-	docker build \
-		--build-arg MONGO_INITDB_ROOT_USERNAME=raven \
-		--build-arg MONGO_INITDB_ROOT_PASSWORD=TLd2DVeAXdKC77nblKCKXpBK0COWU92zp9rc \
-		-t raven-emh-robot:v1.0 .
+	docker build -t raven-emh-robot:v1.0 .
 
 docker_run:
 	docker run -it \
