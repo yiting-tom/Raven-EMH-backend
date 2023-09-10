@@ -36,12 +36,12 @@ class MongoDB(BaseDatabase):
         Uses environment variables for the host, port, username, password, and database name.
         """
         self.client = MongoClient(
-            host=os.getenv("DB_HOST"),
-            port=int(os.getenv("DB_PORT")),
-            username=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
+            host=os.getenv("MONGODB_HOST"),
+            port=int(os.getenv("MONGODB_PORT")),
+            username=os.getenv("MONGODB_USER"),
+            password=os.getenv("MONGODB_PASSWORD"),
         )
-        self.database = self.client[os.getenv("DB_NAME")]
+        self.database = self.client[os.getenv("MONGODB_NAME")]
         self.grid_fs = GridFS(self.database)
 
     def test_connection(self) -> bool:
