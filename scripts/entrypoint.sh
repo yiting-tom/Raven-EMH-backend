@@ -6,4 +6,4 @@ sleep 5
 
 init_mongodb.sh
 
-make dev
+make run

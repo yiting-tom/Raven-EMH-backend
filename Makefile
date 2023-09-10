@@ -30,7 +30,7 @@ generate_gradient_spec:
 
 create_gradient_deployment: docker_build generate_gradient_spec
 	gradient deployments create \
-		--apiKey $(PAPERSPACE_API_KEY)
-		--project_id $(PAPERSPACE_DEPLOY_PROJECT_ID) \
+		--apiKey $(PAPERSPACE_API_KEY) \
+		--projectId $(PAPERSPACE_DEPLOY_PROJECT_ID) \
 		--name $(APP_NAME)\
 		--spec $(PAPERSPACE_GTADIENT_SPEC_FILE)
