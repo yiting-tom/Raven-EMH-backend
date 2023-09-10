@@ -181,3 +181,4 @@ evaluation/test_filelists/lr*.txt
 .env.*
 !.env.example
 Wav2Lip/temp/*
+gradient-deployment.yaml

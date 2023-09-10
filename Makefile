@@ -1,7 +1,7 @@
 DOTENV_FILE=.env.dev
 PAPERSPACE_GTADIENT_SPEC_FILE=gradient-deployment.yaml
 
--include DOTENV_FILE
+-include $(DOTENV_FILE)
 
 run:
 	CUDA_VISIBLE_DEVICES=0 ENV=staging python3 main.py
@@ -28,7 +28,7 @@ docker_run_bash:
 generate_gradient_spec:
 	bash scripts/make_spec_from_env.sh -e $(DOTENV_FILE) -o $(PAPERSPACE_GTADIENT_SPEC_FILE)
 
-create_gradient_deployment: generate_gradient_spec
+create_gradient_deployment: docker_build generate_gradient_spec
 	gradient deployments create \
 		--apiKey $(PAPERSPACE_API_KEY)
 		--project_id $(PAPERSPACE_DEPLOY_PROJECT_ID) \
