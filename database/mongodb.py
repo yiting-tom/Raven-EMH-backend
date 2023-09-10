@@ -20,10 +20,11 @@ from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 
+from database._base_database import BaseDatabase, BaseDatabaseConnector
 from utils.logger import logger
 
 
-class MongoDB:
+class MongoDB(BaseDatabase):
     """
     Class representing a MongoDB client, allowing for connection management and
     connectivity testing.
@@ -97,7 +98,7 @@ class MongoDB:
         return self.database[name]
 
 
-class MongoDBConnector:
+class MongoDBConnector(BaseDatabaseConnector):
     """
     Class to manage the integration of MongoDB with a FastAPI application.
     Manages the connection and disconnection events using FastAPI event handlers.
@@ -110,17 +111,17 @@ class MongoDBConnector:
         Args:
             app (FastAPI): FastAPI application instance.
         """
-        self.mongodb = MongoDB()
+        self.database = MongoDB()  # Initialize MongoDB instance
         self.app = app
 
-    def connect_to_mongo(self):
+    def connect_to_db(self):
         """
         Registers the test_connection method of the MongoDB instance to the startup event of the FastAPI application.
         """
-        self.app.add_event_handler("startup", self.mongodb.test_connection)
+        self.app.add_event_handler("startup", self.database.test_connection)
 
-    def close_mongo_connection(self):
+    def close_db_connection(self):
         """
         Registers the close_connection method of the MongoDB instance to the shutdown event of the FastAPI application.
         """
-        self.app.add_event_handler("shutdown", self.mongodb.close_connection)
+        self.app.add_event_handler("shutdown", self.database.close_connection)

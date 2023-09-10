@@ -15,7 +15,10 @@ Routes:
     - DELETE "/{chat_id}": Delete a chat object by its unique ID.
 """
 
+from typing import Dict, List
+
 from fastapi import APIRouter, HTTPException
+
 from database.mongodb import MongoDB
 from external.chat.openai_api import MedicalChatBot
 from external.tts.aws_polly_api import PollyTTS
@@ -56,7 +59,7 @@ chat_service = ChatService(
 
 
 @router.post("/", response_model=ChatInDBOutput)
-async def create_chat(chat: ChatCreateInput):
+async def create_chat(chat: ChatCreateInput, format_dict: Dict[str, str]):
     """
     Create a new chat object and save it to the database.
 
@@ -66,7 +69,7 @@ async def create_chat(chat: ChatCreateInput):
     Returns:
         The created chat object, with additional information like its unique ID.
     """
-    return chat_service.create_chat(chat)
+    return chat_service.create_chat(chat, format_dict)
 
 
 # @router.post("/", response_model=ChatInDBOutput)
@@ -91,7 +94,7 @@ async def get_chat_by_id(chat_id: str):
     return chat_service.get_chat_by_id(chat_id)
 
 
-@router.get("/", response_model=list[ChatInDBOutput])
+@router.get("/", response_model=List[ChatInDBOutput])
 async def get_all_chats():
     """
     Retrieve all chat objects stored in the database.

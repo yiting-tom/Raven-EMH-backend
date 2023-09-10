@@ -27,13 +27,17 @@ from dotenv import load_dotenv
 env_fname = f".env.{os.getenv('ENV')}" if os.getenv("ENV") else ".env"
 load_dotenv(env_fname)
 
+from configs import firebase_conf
+
+firebase_conf.init_firebase()
+
+
 from fastapi import FastAPI
 
+from database.firestore import FirebaseConnector
 from database.mongodb import MongoDBConnector
 from middlewares.cors_middleware import add_middleware
 from routes.chat import router as chat_router
-
-# from routes.multimedia import router as multimedia_router
 from routes.feedback import router as feedback_router
 from routes.user import router as user_router
 from utils.logger import init_logging
@@ -52,7 +56,13 @@ init_logging()
 # The MongoDBConnector is initialized with the FastAPI application instance
 # and is then used to establish a connection to MongoDB
 mongodb_connector = MongoDBConnector(app=app)
-mongodb_connector.connect_to_mongo()
+mongodb_connector.connect_to_db()
+
+# Initialize Firebase connection
+# The FirebaseConnector is initialized with the FastAPI application instance
+# and is then used to establish a connection to Firebase
+firebase_connector = FirebaseConnector(app=app)
+firebase_connector.connect_to_db()
 
 # Add middlewares
 # The add_middleware function is imported from middlewares.cors_middleware
@@ -64,8 +74,8 @@ add_middleware(app)
 # using the include_router method
 # app.include_router(multimedia_router, prefix="/multimedia", tags=["multimedia"])
 app.include_router(chat_router, prefix="/chat", tags=["chat"])
-app.include_router(feedback_router, prefix="/feedback", tags=["feedback"])
 app.include_router(user_router, prefix="/user", tags=["user"])
+app.include_router(feedback_router, prefix="/feedback", tags=["feedback"])
 
 # This block checks if this script is run directly and not imported as a module
 # If run directly, it will use Uvicorn to run the FastAPI application

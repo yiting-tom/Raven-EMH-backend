@@ -2,14 +2,13 @@
 
 from typing import Any, List, Optional
 
+from bson import ObjectId
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.errors import DuplicateKeyError
 
 from models import FeedbackCreate, FeedbackInDB
 from repositories._base_repo import BaseRepo, IdNotFoundError
-
-from bson import ObjectId
 from utils.logger import logger
 
 

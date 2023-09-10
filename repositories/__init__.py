@@ -16,5 +16,6 @@ Imports:
 
 from repositories._base_repo import IdNotFoundError
 from repositories._chat_repo import ChatRepo
-from repositories._multimedia_repo import MultimediaRepo
 from repositories._feedback_repo import FeedbackRepo
+from repositories._multimedia_repo import MultimediaRepo
+from repositories._user_repo import UserRepo

@@ -1,13 +1,14 @@
 # feedback_routes.py
 
 from typing import List
-from datetime import datetime
-from fastapi import APIRouter, HTTPException
-from database.mongodb import MongoDB
 
-from models import FeedbackCreate, FeedbackInDB, FeedbackUpdate
-from services import FeedbackService
+from fastapi import APIRouter, Depends, HTTPException, Request
+
+from database.mongodb import MongoDB
+from dependencies.authentication import get_user_id, requires_roles
+from models import FeedbackCreate, FeedbackInDB, FeedbackUpdate, UserRole
 from repositories import FeedbackRepo
+from services import FeedbackService
 
 router = APIRouter()
 
@@ -19,8 +20,14 @@ feedback_repo = FeedbackRepo(
 feedback_service = FeedbackService(feedback_repo)
 
 
-@router.post("/", response_model=FeedbackInDB)
-async def create_feedback(feedback: FeedbackCreate) -> FeedbackInDB:
+@router.post(
+    "/",
+    response_model=FeedbackInDB,
+)
+async def create_feedback(
+    feedback: FeedbackCreate,
+    # current_user: str = Depends(get_user_id),
+) -> FeedbackInDB:
     """
     Create a new feedback.
     """
@@ -39,7 +46,11 @@ async def create_feedback(feedback: FeedbackCreate) -> FeedbackInDB:
 
 
 @router.get("/user/{user_id}", response_model=List[FeedbackInDB])
-async def get_feedback_by_user_id(user_id: str) -> List[FeedbackInDB]:
+@requires_roles([UserRole.ADMIN, UserRole.DOCTOR])
+async def get_feedback_by_user_id(
+    request: Request,
+    user_id: str,
+) -> List[FeedbackInDB]:
     """
     Get feedback details by its user ID.
     """
@@ -59,7 +70,10 @@ async def get_all_feedbacks() -> List[FeedbackInDB]:
 
 
 @router.put("/{feedback_id}", response_model=bool)
-async def update_feedback(feedback_id: str, feedback_update: FeedbackUpdate) -> bool:
+@requires_roles([UserRole.ADMIN, UserRole.DOCTOR])
+async def update_feedback(
+    request: Request, feedback_id: str, feedback_update: FeedbackUpdate
+) -> bool:
     """
     Update a feedback by its ID.
     """

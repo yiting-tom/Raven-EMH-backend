@@ -2,10 +2,10 @@
 
 from typing import List, Optional
 
-from repositories import FeedbackRepo, IdNotFoundError
-from models import FeedbackCreate, FeedbackInDB, FeedbackUpdate
-
 from pymongo.database import Database
+
+from models import FeedbackCreate, FeedbackInDB, FeedbackUpdate
+from repositories import FeedbackRepo, IdNotFoundError
 from utils.logger import logger
 
 

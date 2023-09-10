@@ -17,8 +17,9 @@ import torch
 from loguru import logger
 from tqdm import tqdm
 from wav2lip_models import Wav2Lip
-from configs import paths as paths
+
 from configs import paths
+from configs import paths as paths
 
 start = time.time()
 

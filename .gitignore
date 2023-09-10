@@ -180,3 +180,4 @@ evaluation/test_filelists/lr*.txt
 *.mp3
 .env.dev
 .env.local
+Wav2Lip/temp/*

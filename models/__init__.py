@@ -22,5 +22,12 @@ from models._chat import (
     ChatUpdate,
     Status,
 )
-from models._multimedia import MultimediaCreate, MultimediaInDB, MultimediaInDBOutput
 from models._feedback import FeedbackCreate, FeedbackInDB, FeedbackUpdate
+from models._multimedia import MultimediaCreate, MultimediaInDB, MultimediaInDBOutput
+from models._user import (
+    UserDataInFirebaseAuth,
+    UserDataInFirestore,
+    UserOutput,
+    UserRole,
+    UserStatus,
+)

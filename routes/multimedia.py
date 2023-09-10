@@ -14,6 +14,7 @@ Routes:
     DELETE /{multimedia_id} : Delete a specific multimedia object by its ID
 """
 
+from typing import List
 from fastapi import APIRouter, HTTPException
 
 from database.mongodb import MongoDB
@@ -66,7 +67,7 @@ async def get_multimedia_by_id(multimedia_id: str):
     return tmp
 
 
-@router.get("/", response_model=list[MultimediaInDBOutput])
+@router.get("/", response_model=List[MultimediaInDBOutput])
 async def get_all_multimedias():
     """
     Retrieve all multimedia objects stored in the database.

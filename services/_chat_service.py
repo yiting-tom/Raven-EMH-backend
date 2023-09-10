@@ -19,20 +19,20 @@ from bson import ObjectId
 from gridfs import GridFS
 from loguru import logger
 
+from configs import paths as paths
 from external.chat.openai_api import MedicalChatBot
 from external.tts._base_tts import BaseTTS
 from models import (
     ChatCreate,
     ChatCreateInput,
-    ChatUpdate,
     ChatInDB,
     ChatInDBOutput,
-    Status,
+    ChatUpdate,
     FeedbackCreate,
+    Status,
 )
-from services._feedback_service import FeedbackService
 from repositories import ChatRepo, IdNotFoundError
-from configs import paths as paths
+from services._feedback_service import FeedbackService
 from utils import converter
 from Wav2Lip.wav2lip import Wav2LipAAG
 
@@ -66,7 +66,10 @@ class ChatService:
         self.feedback_service = feedback_service
 
     def create_chat(
-        self, data: ChatCreateInput, username: str = "Mr. TestUser"
+        self,
+        data: ChatCreateInput,
+        format_dict: Dict[str, str],
+        max_tokens: int = 64,
     ) -> ChatInDBOutput:
         """
         Creates a new chat record based on the input data.
@@ -99,6 +102,8 @@ class ChatService:
         # Generate response by chatbot
         response: str = self.chatbot.chat(
             user_assistants=context,
+            format_dict=format_dict,
+            max_tokens=max_tokens,
         )
         logger.debug(f"Response from {self.chatbot}: {response}")
 
@@ -118,7 +123,7 @@ class ChatService:
         # Create new feedback
         new_feedback = FeedbackCreate(
             user_id=data.user_id,
-            username=username,
+            username=data.username,
             chat_id=data.parent_id,
             request=data.request,
             response=response,
@@ -130,6 +135,7 @@ class ChatService:
         chat_in_db: ChatInDB = self.repo.create(
             ChatCreate(
                 user_id=data.user_id,
+                username=data.username,
                 request=data.request,
                 parent_id=data.parent_id,
                 response=response,

@@ -13,6 +13,7 @@ class Status(str, Enum):
 
 class ChatBase(BaseModel):
     user_id: str
+    username: str
     request: str
     parent_id: str
 
@@ -33,6 +34,7 @@ class ChatCreate(ChatBase):
         json_schema_extra = {
             "example": {
                 "user_id": "5f9d9a9d9a9d9a9d9a9d9a9d",
+                "username": "John Doe",
                 "request": "Hello, world!",
                 "response": "Hello, world!",
                 "parent_id": "5f9d9a9d9a9d9a9d9a9d9a9d",
@@ -79,6 +81,7 @@ class ChatInDBOutput(ChatBase):
             "example": {
                 "id": "5f9d9a9d9a9d9a9d9a9d9a9d",
                 "user_id": "5f9d9a9d9a9d9a9d9a9d9a9d",
+                "username": "John Doe",
                 "request": "Hello, world!",
                 "response": "Hello, world!",
                 "status": "ACTIVATING",

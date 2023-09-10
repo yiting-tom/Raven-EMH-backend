@@ -12,10 +12,13 @@ Classes:
 """
 
 import os
+import re
 from typing import List, Optional
 
 import openai
 from loguru import logger
+
+from configs import paths
 
 
 class MedicalChatBot:
@@ -38,7 +41,11 @@ class MedicalChatBot:
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.model = model
         self._validate_api_key()
-    
+        self.system_template: str = open(
+            paths.PROMPT_DIR / f"{self.__class__.__name__}.txt"
+        ).read()
+        self.template_slot = re.findall(r"\{([^}]+)\}", self.system_template)
+
     def __repr__(self):
         """The string representation of the MedicalChatBot."""
         return f"MedicalChatBot(model={self.model})"
@@ -56,47 +63,25 @@ class MedicalChatBot:
     def chat(
         self,
         user_assistants: List[str],
-        system: Optional[str] = None,
-        model_name: Optional[str] = None,
-        model_personality: Optional[str] = "None"
+        format_dict: Optional[dict] = None,
+        max_tokens: int = 64,
     ) -> str:
         """
         Chat with the OpenAI API.
 
         Args:
             user_assistants (List[str]): A list of strings that alternate between user and assistant messages.
-            system (Optional[str]): A string containing the system message. Defaults to None.
 
         Returns:
             str: The response from the assistant.
         """
-        model_name = model_name or "EMHir"
-        model_personality = model_personality or "kind, polite, patient, and affable"
-        DEFAULT_SYSTEM = f"""Your name is {model_name}, and you are a EMHir known as the Emergency Medical Helper.
-You are an AI designed to talk to patients, obtain a detailed medical history in a conversation with them.
-You are {model_personality}.
-You will conduct a structured medical interview with each patient follow with the instructions:
-1. The chief complaint (CC)
-2. History of the Presenting Illness (HPI),
-3. Past Medical History (PMH)
-4. Medications
-5. Allergies
-6. Family History
-7. Social history
-8. Review of Systems.
-Please ask one question at a time, and wait for the patient to respond before asking the next question.
-
-The interview may go into tangents, and you may politely make small-talk with the patient to earn their confidence,
-discussing the weather, their family history, or personal anecdotes,
-but please politely direct them back to the directed medical history.
-
-At the end of the interview, please thank the patient, confirm with them the contents of the discussion,
-and then output the summation of the interview in a structured format with the same headings mentioned above,
-along with a summary, as well as a provisional diagnosis and recommendations to the attending medical staff.
-"""
-        system = system or DEFAULT_SYSTEM
 
         assert isinstance(user_assistants, list), "`user_assistants` should be a list"
+        assert set(self.template_slot) == set(
+            format_dict.keys()
+        ), f"formating_dict ({format_dict.keys()}) should have the same keys as template_slot ({self.template_slot})"
+
+        system = self.system_template.format(**format_dict)
 
         system_msg = [{"role": "system", "content": system}]
         user_assistant_msgs = [
@@ -109,7 +94,11 @@ along with a summary, as well as a provisional diagnosis and recommendations to 
         logger.info(f"Sending {len(msgs)} messages to OpenAI API")
 
         try:
-            response = openai.ChatCompletion.create(model=self.model, messages=msgs)
+            response = openai.ChatCompletion.create(
+                model=self.model,
+                messages=msgs,
+                max_tokens=max_tokens,
+            )
         except Exception as e:
             logger.error(f"Failed to call OpenAI API: {e}")
             raise
