@@ -44,7 +44,7 @@ from middlewares.cors_middleware import add_middleware
 from routes.chat import router as chat_router
 from routes.feedback import router as feedback_router
 from routes.user import router as user_router
-# from utils.logger import init_logging
+from utils.logger import init_logging
 
 # Initialize FastAPI application
 # The debug mode and title are set based on environment variables
@@ -54,7 +54,7 @@ app = FastAPI(
 )
 
 # Initialize logger
-# init_logging()
+init_logging()
 
 # Initialize MongoDB connection
 # The MongoDBConnector is initialized with the FastAPI application instance
@@ -89,6 +89,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=os.getenv("APP_PORT"),
+        port=int(os.getenv("APP_PORT")),
         reload=True if os.getenv("ENV") == "dev" else False,
     )
