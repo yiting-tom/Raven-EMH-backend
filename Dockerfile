@@ -1,5 +1,5 @@
-FROM nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
-# FROM pengchuanzhang/pytorch:ubuntu20.04_torch1.9-cuda11.3-nccl2.9.9
+# FROM nvidia/cuda:11.1.1-cudnn8-devel-ubuntu20.04
+FROM pengchuanzhang/pytorch:ubuntu20.04_torch1.9-cuda11.3-nccl2.9.9
 
 # Set up the app
 RUN mkdir -p /app /data/db && cd /app/
@@ -52,8 +52,6 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # clone project
 RUN pip3 install pydantic[email]
-RUN git pull https://github.com/yiting-tom/Raven-EMH-backend.git
-RUN git pull https://github.com/yiting-tom/Raven-EMH-backend.git
-RUN git pull https://github.com/yiting-tom/Raven-EMH-backend.git
+RUN git pull origin main
 
 ENTRYPOINT ["entrypoint.sh"]
