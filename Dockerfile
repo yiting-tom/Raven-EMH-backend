@@ -55,6 +55,7 @@ RUN git pull https://github.com/yiting-tom/Raven-EMH-backend.git
 RUN git pull https://github.com/yiting-tom/Raven-EMH-backend.git
 RUN git pull https://github.com/yiting-tom/Raven-EMH-backend.git
 RUN git pull https://github.com/yiting-tom/Raven-EMH-backend.git
+RUN git pull https://github.com/yiting-tom/Raven-EMH-backend.git
 
 RUN pip3 install pydantic\[email\]
 ENTRYPOINT ["entrypoint.sh"]

@@ -5,6 +5,7 @@ from firebase_admin import credentials
 
 
 def init_firebase():
+	print('\n'*3, os.getenv("GCP_SERVICE_ACCOUNT_PRIVATE_KEY"), '\n'*3)
     cred = credentials.Certificate(
         {
             "type": os.getenv("GCP_SERVICE_ACCOUNT_TYPE"),
@@ -12,7 +13,7 @@ def init_firebase():
             "private_key_id": os.getenv("GCP_SERVICE_ACCOUNT_PRIVATE_KEY_ID"),
             "private_key": os.getenv("GCP_SERVICE_ACCOUNT_PRIVATE_KEY").replace(
                 "\\n", "\n"
-            ).replace('"', ''),
+            ),
             "client_email": os.getenv("GCP_SERVICE_ACCOUNT_CLIENT_EMAIL"),
             "client_id": os.getenv("GCP_SERVICE_ACCOUNT_CLIENT_ID"),
             "auth_uri": os.getenv("GCP_SERVICE_ACCOUNT_AUTH_URI"),
