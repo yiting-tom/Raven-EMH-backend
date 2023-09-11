@@ -12,7 +12,7 @@ def init_firebase():
             "private_key_id": os.getenv("GCP_SERVICE_ACCOUNT_PRIVATE_KEY_ID"),
             "private_key": os.getenv("GCP_SERVICE_ACCOUNT_PRIVATE_KEY").replace(
                 "\\n", "\n"
-            ),
+            ).replace('"', ''),
             "client_email": os.getenv("GCP_SERVICE_ACCOUNT_CLIENT_EMAIL"),
             "client_id": os.getenv("GCP_SERVICE_ACCOUNT_CLIENT_ID"),
             "auth_uri": os.getenv("GCP_SERVICE_ACCOUNT_AUTH_URI"),

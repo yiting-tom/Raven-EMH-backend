@@ -1,4 +1,4 @@
-DOTENV_FILE=.env.dev
+DOTENV_FILE=.env.staging
 PAPERSPACE_GTADIENT_SPEC_FILE=gradient-deployment.yaml
 
 -include $(DOTENV_FILE)
