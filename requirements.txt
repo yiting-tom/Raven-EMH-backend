@@ -9,7 +9,6 @@ loguru==0.7.0
 openai==0.27.8
 boto3==1.28.30
 pydantic==2.1.1
-pydantic\[email\]
 librosa==0.10.0
 numpy==1.22.0
 opencv-contrib-python

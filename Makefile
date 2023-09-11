@@ -44,10 +44,10 @@ docker_run_bash_gpus:
 generate_gradient_spec:
 	bash scripts/make_spec_from_env.sh -e $(DOTENV_FILE) -o $(PAPERSPACE_GTADIENT_SPEC_FILE)
 
-create_gradient_deployment: docker_build generate_gradient_spec
+create_gradient_deployment: docker_build
+	docker push $(PAPERSPACE_DEPLOY_IMAGE)
 	gradient deployments create \
 		--apiKey $(PAPERSPACE_API_KEY) \
 		--projectId $(PAPERSPACE_DEPLOY_PROJECT_ID) \
 		--name $(APP_NAME)\
 		--spec $(PAPERSPACE_GTADIENT_SPEC_FILE)
-
