@@ -24,8 +24,12 @@ from dotenv import load_dotenv
 
 # Load environment variables
 # The file name is determined based on the ENV environment variable
-env_fname = f".env.{os.getenv('ENV')}" if os.getenv("ENV") else ".env"
-load_dotenv(env_fname)
+env_fname = f".env.{os.getenv('ENV')}" if os.getenv("ENV") else None
+if env_fname is not None:
+	print(f'using .env file "{env_fname}"')
+	load_dotenv(env_fname)
+else:
+	print(f'using env vars')
 
 from configs import firebase_conf
 
