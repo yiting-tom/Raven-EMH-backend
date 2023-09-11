@@ -51,12 +51,7 @@ COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 # clone project
-RUN git pull https://github.com/yiting-tom/Raven-EMH-backend.git
-RUN git pull https://github.com/yiting-tom/Raven-EMH-backend.git
-RUN git pull https://github.com/yiting-tom/Raven-EMH-backend.git
-RUN git pull https://github.com/yiting-tom/Raven-EMH-backend.git
-RUN git pull https://github.com/yiting-tom/Raven-EMH-backend.git
+RUN pip3 install pydantic\[email\]
 RUN git pull https://github.com/yiting-tom/Raven-EMH-backend.git
 
-RUN pip3 install pydantic\[email\]
 ENTRYPOINT ["entrypoint.sh"]
