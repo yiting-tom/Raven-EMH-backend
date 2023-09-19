@@ -99,8 +99,10 @@ class ChatService:
         rec_get_context(data.parent_id)
         context.append(data.request)
         logger.info(f"Context length: {len(context)//2}")
+
         # Generate response by chatbot
         response: str = self.chatbot.chat(
+            user_id=data.user_id,
             user_assistants=context,
             format_dict=format_dict,
             max_tokens=max_tokens,

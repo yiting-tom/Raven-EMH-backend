@@ -45,7 +45,7 @@ class MedicalChatBot:
             paths.PROMPT_DIR / f"{self.__class__.__name__}.txt"
         ).read()
         self.template_slot = re.findall(r"\{([^}]+)\}", self.system_template)
-        self.chatsummary = ""
+        self.chat_summaries = {}  # Initialize a dictionary to store summaries for different users
 
     def __repr__(self):
         """The string representation of the MedicalChatBot."""
@@ -61,9 +61,8 @@ class MedicalChatBot:
         openai.api_key = self.api_key
         logger.info("Loaded OpenAI API key")
 
-    def summary_chatgpt(self, user_assistant_msgs, max_tokens: int = 64):
-        
-        previous_summary = self.chatsummary
+    def summarize(self, user_id, user_assistant_msgs, max_tokens: int = 64):
+        previous_summary = self.chat_summaries.get(user_id, "")
         conversation_content = "\n".join([f"{msg['role'].upper()}: {msg['content']}" for msg in user_assistant_msgs])
 
         msgs = [
@@ -94,16 +93,12 @@ class MedicalChatBot:
 
         return response["choices"][0]["message"]["content"]
 
-    def chat(
-        self,
-        user_assistants: List[str],
-        format_dict: Optional[dict] = None,
-        max_tokens: int = 64,
-    ) -> str:
+    def chat(self, user_id, user_assistants: List[str], format_dict: Optional[dict] = None, max_tokens: int = 64) -> str:
         """
         Chat with the OpenAI API.
 
         Args:
+            user_id (str): A unique identifier for the user.
             user_assistants (List[str]): A list of strings that alternate between user and assistant messages.
 
         Returns:
@@ -117,8 +112,9 @@ class MedicalChatBot:
 
         system = self.system_template.format(**format_dict)
 
-        if self.chatsummary != "":
-            system = system + "Your previous chat history with user is summarized as below:" + self.chatsummary
+        previous_summary = self.chat_summaries.get(user_id, "")
+        if previous_summary != "":
+            system = system + "Your previous chat history with user is summarized as below:" + previous_summary
 
         system_msg = [{"role": "system", "content": system}]
         logger.info(f"system_msg: {system_msg}")
@@ -151,8 +147,7 @@ class MedicalChatBot:
 
         logger.info("Received response from OpenAI API")
 
-        # Update the new self.chatsummary at the end of every chat.
-        self.chatsummary = self.summary_chatgpt(user_assistant_msgs)
-        # logger.info(f"self.chatsummary: {self.chatsummary}")
+        # Update the new chat_summary for the user at the end of every chat.
+        self.chat_summaries[user_id] = self.summarize(user_id, user_assistant_msgs)
 
         return response["choices"][0]["message"]["content"]
