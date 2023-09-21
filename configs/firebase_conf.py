@@ -10,7 +10,7 @@ def init_firebase():
             "type": os.getenv("GCP_SERVICE_ACCOUNT_TYPE"),
             "project_id": os.getenv("GCP_SERVICE_ACCOUNT_PROJECT_ID"),
             "private_key_id": os.getenv("GCP_SERVICE_ACCOUNT_PRIVATE_KEY_ID"),
-            "private_key": os.getenv("GCP_SERVICE_ACCOUNT_PRIVATE_KEY")[1:-1].replace(
+            "private_key": os.getenv("GCP_SERVICE_ACCOUNT_PRIVATE_KEY").replace(
                 "\\n", "\n"
             ),
             "client_email": os.getenv("GCP_SERVICE_ACCOUNT_CLIENT_EMAIL"),
