@@ -64,6 +64,7 @@ async def create_chat(chat: ChatCreateInput, format_dict: Dict[str, str]):
     Create a new chat object and save it to the database.
 
     Args:
+        user_id (str): The unique ID of the user initiating the chat.
         chat (ChatCreate): The chat object to be created.
 
     Returns:

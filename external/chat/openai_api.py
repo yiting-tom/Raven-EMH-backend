@@ -45,6 +45,7 @@ class MedicalChatBot:
             paths.PROMPT_DIR / f"{self.__class__.__name__}.txt"
         ).read()
         self.template_slot = re.findall(r"\{([^}]+)\}", self.system_template)
+        self.chat_summaries = {}  # Initialize a dictionary to store summaries for different users
 
     def __repr__(self):
         """The string representation of the MedicalChatBot."""
@@ -60,16 +61,44 @@ class MedicalChatBot:
         openai.api_key = self.api_key
         logger.info("Loaded OpenAI API key")
 
-    def chat(
-        self,
-        user_assistants: List[str],
-        format_dict: Optional[dict] = None,
-        max_tokens: int = 64,
-    ) -> str:
+    def summarize(self, user_id, user_assistant_msgs, max_tokens: int = 64):
+        previous_summary = self.chat_summaries.get(user_id, "")
+        conversation_content = "\n".join([f"{msg['role'].upper()}: {msg['content']}" for msg in user_assistant_msgs])
+
+        msgs = [
+            {"role": "system", "content": "You will summarize the conversation between user and you, and outcomes only one sentence in 50 words or less."},
+            {"role": "user", "content": f"This is the previous summary: {previous_summary}\nPlease combine the conversation below with the previous summary:\n{conversation_content}"}
+        ]
+
+        logger.info(f"Sending {len(msgs)} messages to OpenAI API")
+
+        try:
+            response = openai.ChatCompletion.create(
+                model=self.model,
+                messages=msgs,
+                max_tokens=max_tokens,
+            )
+        except Exception as e:
+            logger.error(f"Failed to call OpenAI API: {e}")
+            raise
+
+        if not response.get("choices"):
+            logger.error("No choices in the response from OpenAI API")
+            raise Exception("No choices in the response from OpenAI API")
+
+        status_code = response["choices"][0]["finish_reason"]
+        assert status_code == "stop", f"The status code was {status_code}."
+
+        logger.info("Received response from OpenAI API")
+
+        return response["choices"][0]["message"]["content"]
+
+    def chat(self, user_id, user_assistants: List[str], format_dict: Optional[dict] = None, max_tokens: int = 64) -> str:
         """
         Chat with the OpenAI API.
 
         Args:
+            user_id (str): A unique identifier for the user.
             user_assistants (List[str]): A list of strings that alternate between user and assistant messages.
 
         Returns:
@@ -83,7 +112,13 @@ class MedicalChatBot:
 
         system = self.system_template.format(**format_dict)
 
+        previous_summary = self.chat_summaries.get(user_id, "")
+        if previous_summary:
+            system = f"{system} Your previous chat history with user is summarized as below: {previous_summary}"
+
         system_msg = [{"role": "system", "content": system}]
+        logger.info(f"system_msg: {system_msg}")
+
         user_assistant_msgs = [
             {"role": "assistant" if i % 2 else "user", "content": message}
             for i, message in enumerate(user_assistants)
@@ -111,5 +146,30 @@ class MedicalChatBot:
         assert status_code == "stop", f"The status code was {status_code}."
 
         logger.info("Received response from OpenAI API")
+
+        # Summarize the conversation and update the chat_summary for the user.
+        previous_summary = self.chat_summaries.get(user_id, "")
+        conversation_content = "\n".join([f"{msg['role'].upper()}: {msg['content']}" for msg in user_assistant_msgs])
+
+        msgs = [
+            {"role": "system", "content": "You will summarize the conversation between user and you, and outcomes only one sentence in 50 words or less."},
+            {"role": "user", "content": f"This is the previous summary: {previous_summary}\nPlease combine the conversation below with the previous summary:\n{conversation_content}"}
+        ]
+
+        try:
+            summary_response = openai.ChatCompletion.create(
+                model=self.model,
+                messages=msgs,
+                max_tokens=max_tokens,
+            )
+        except Exception as e:
+            logger.error(f"Failed to call OpenAI API for summarization: {e}")
+            raise
+
+        if not summary_response.get("choices"):
+            logger.error("No choices in the summary response from OpenAI API")
+            raise Exception("No choices in the summary response from OpenAI API")
+
+        self.chat_summaries[user_id] = summary_response["choices"][0]["message"]["content"]
 
         return response["choices"][0]["message"]["content"]
