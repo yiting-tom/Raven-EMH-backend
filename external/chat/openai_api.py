@@ -113,8 +113,8 @@ class MedicalChatBot:
         system = self.system_template.format(**format_dict)
 
         previous_summary = self.chat_summaries.get(user_id, "")
-        if previous_summary != "":
-            system = system + "Your previous chat history with user is summarized as below:" + previous_summary
+        if previous_summary:
+            system = f"{system} Your previous chat history with user is summarized as below: {previous_summary}"
 
         system_msg = [{"role": "system", "content": system}]
         logger.info(f"system_msg: {system_msg}")
@@ -147,7 +147,29 @@ class MedicalChatBot:
 
         logger.info("Received response from OpenAI API")
 
-        # Update the new chat_summary for the user at the end of every chat.
-        self.chat_summaries[user_id] = self.summarize(user_id, user_assistant_msgs)
+        # Summarize the conversation and update the chat_summary for the user.
+        previous_summary = self.chat_summaries.get(user_id, "")
+        conversation_content = "\n".join([f"{msg['role'].upper()}: {msg['content']}" for msg in user_assistant_msgs])
+
+        msgs = [
+            {"role": "system", "content": "You will summarize the conversation between user and you, and outcomes only one sentence in 50 words or less."},
+            {"role": "user", "content": f"This is the previous summary: {previous_summary}\nPlease combine the conversation below with the previous summary:\n{conversation_content}"}
+        ]
+
+        try:
+            summary_response = openai.ChatCompletion.create(
+                model=self.model,
+                messages=msgs,
+                max_tokens=max_tokens,
+            )
+        except Exception as e:
+            logger.error(f"Failed to call OpenAI API for summarization: {e}")
+            raise
+
+        if not summary_response.get("choices"):
+            logger.error("No choices in the summary response from OpenAI API")
+            raise Exception("No choices in the summary response from OpenAI API")
+
+        self.chat_summaries[user_id] = summary_response["choices"][0]["message"]["content"]
 
         return response["choices"][0]["message"]["content"]

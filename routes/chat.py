@@ -59,7 +59,7 @@ chat_service = ChatService(
 
 
 @router.post("/", response_model=ChatInDBOutput)
-async def create_chat(user_id: str, chat: ChatCreateInput, format_dict: Dict[str, str]):
+async def create_chat(chat: ChatCreateInput, format_dict: Dict[str, str]):
     """
     Create a new chat object and save it to the database.
 
@@ -70,7 +70,7 @@ async def create_chat(user_id: str, chat: ChatCreateInput, format_dict: Dict[str
     Returns:
         The created chat object, with additional information like its unique ID.
     """
-    return chat_service.create_chat(user_id, chat, format_dict)
+    return chat_service.create_chat(chat, format_dict)
 
 
 # @router.post("/", response_model=ChatInDBOutput)
