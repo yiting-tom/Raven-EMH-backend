@@ -13,77 +13,70 @@ Classes:
 
 import os
 import re
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import openai
 from loguru import logger
 
-from configs import paths
 
-
-class MedicalChatBot:
+class ChatBot:
     """
-    A class to handle interaction with the OpenAI API for medical chatbot purposes.
+    A class to handle interaction with the OpenAI API for chatbot purposes.
 
     Attributes:
         api_key (Optional[str]): The OpenAI API key.
-        model (str): The name of the model to use.
     """
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-3.5-turbo"):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+    ):
         """
         Initialize the MedicalChatBot.
 
         Args:
             api_key (Optional[str]): The OpenAI API key. Defaults to None.
-            model (str): The name of the model to use. Defaults to "gpt-3.5-turbo".
+
+        Raises:
+            Exception: If the API key is not set.
         """
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.model = model
         self._validate_api_key()
-        self.system_template: str = open(
-            paths.PROMPT_DIR / f"{self.__class__.__name__}.txt"
-        ).read()
-        self.template_slot = re.findall(r"\{([^}]+)\}", self.system_template)
 
     def __repr__(self):
         """The string representation of the MedicalChatBot."""
-        return f"MedicalChatBot(model={self.model})"
+        return f"{self.__class__.__name__}(model={self.model})"
 
     def _validate_api_key(self):
         """
         Validate the API key. Raise an exception if it's not set.
         """
         if self.api_key is None:
-            logger.error("The OpenAI API key must be set.")
-            raise EnvironmentError("OpenAI API key not set.")
+            logger.exception("The OpenAI API key must be set.")
         openai.api_key = self.api_key
         logger.info("Loaded OpenAI API key")
 
     def chat(
         self,
+        system_msg: str,
         user_assistants: List[str],
-        format_dict: Optional[dict] = None,
-        max_tokens: int = 64,
+        model: str = "gpt-3.5-turbo",
+        **kwargs,
     ) -> str:
         """
         Chat with the OpenAI API.
 
         Args:
+            system_msg: str
             user_assistants (List[str]): A list of strings that alternate between user and assistant messages.
 
         Returns:
             str: The response from the assistant.
         """
-
+        assert isinstance(system_msg, str), "`system_msg` should be a string"
         assert isinstance(user_assistants, list), "`user_assistants` should be a list"
-        assert set(self.template_slot) == set(
-            format_dict.keys()
-        ), f"formating_dict ({format_dict.keys()}) should have the same keys as template_slot ({self.template_slot})"
 
-        system = self.system_template.format(**format_dict)
-
-        system_msg = [{"role": "system", "content": system}]
+        system_msg = [{"role": "system", "content": system_msg}]
         user_assistant_msgs = [
             {"role": "assistant" if i % 2 else "user", "content": message}
             for i, message in enumerate(user_assistants)
@@ -91,13 +84,13 @@ class MedicalChatBot:
 
         msgs = system_msg + user_assistant_msgs
 
-        logger.info(f"Sending {len(msgs)} messages to OpenAI API")
+        logger.info(f"Sending {len(msgs)} messages to OpenAI model '{model}")
 
         try:
             response = openai.ChatCompletion.create(
-                model=self.model,
                 messages=msgs,
-                max_tokens=max_tokens,
+                model=model,
+                **kwargs,
             )
         except Exception as e:
             logger.error(f"Failed to call OpenAI API: {e}")
@@ -106,9 +99,6 @@ class MedicalChatBot:
         if not response.get("choices"):
             logger.error("No choices in the response from OpenAI API")
             raise Exception("No choices in the response from OpenAI API")
-
-        status_code = response["choices"][0]["finish_reason"]
-        assert status_code == "stop", f"The status code was {status_code}."
 
         logger.info("Received response from OpenAI API")
 

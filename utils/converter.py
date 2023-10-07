@@ -157,6 +157,30 @@ def url2numpy(
     return cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
 
 
+def url2base64(image_url: str) -> str:
+    """url2base64
+
+    Args:
+        image_url (str): The URL of the image.
+
+    Returns:
+        str: The base64 encoded
+    """
+    # Send a HTTP request to the URL of the image
+    response = requests.get(image_url)
+
+    # Check if the request was successful (HTTP Status Code 200)
+    if response.status_code == 200:
+        # Get the content of the response
+        image_data = response.content
+
+        # Convert the image data to a base64 string
+        base64_str = base64.b64encode(image_data).decode("utf-8")
+        return base64_str
+    else:
+        raise ValueError("Image could not be loaded. Check the URL or the network.")
+
+
 def clip_to_base64(clip: Union[VideoClip, AudioClip], codec="libx264", **kwargs) -> str:
     """
     Converts a moviepy clip to a base64 encoded string.

@@ -2,77 +2,73 @@
 
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException
 
 from database.mongodb import MongoDB
-from dependencies.authentication import get_user_id, requires_roles
-from models import FeedbackCreate, FeedbackInDB, FeedbackUpdate, UserRole
-from repositories import FeedbackRepo
-from services import FeedbackService
+from models import FeedbackInDB, FeedbackUpdateRequest, FeedbackInDBResponse
+from repositories import FeedbackRepo, RobotProfileRepo
+from services import FeedbackService, RobotProfileService
 
 router = APIRouter()
 
 db = MongoDB()
 feedback_repo = FeedbackRepo(
     db.get_database,
-    db.get_collection(FeedbackRepo.COLLECTION_NAME),
+    db.get_collection("feedbacks"),
 )
 feedback_service = FeedbackService(feedback_repo)
 
-
-@router.post(
-    "/",
-    response_model=FeedbackInDB,
+robot_profile_repo = RobotProfileRepo(
+    db.get_database,
+    db.get_collection("robot_profiles"),
 )
-async def create_feedback(
-    feedback: FeedbackCreate,
-    # current_user: str = Depends(get_user_id),
-) -> FeedbackInDB:
-    """
-    Create a new feedback.
-    """
-    return feedback_service.create_feedback(feedback)
+robot_profile_service = RobotProfileService(robot_profile_repo)
 
 
-# @router.get("/{feedback_id}", response_model=FeedbackInDB)
-# async def get_feedback_by_id(feedback_id: str) -> FeedbackInDB:
-#     """
-#     Get feedback details by its ID.
-#     """
-#     feedback = feedback_service.get_feedback_by_id(feedback_id)
-#     if not feedback:
-#         raise HTTPException(status_code=404, detail="Feedback not found")
-#     return feedback
-
-
-@router.get("/user/{user_id}", response_model=List[FeedbackInDB])
-@requires_roles([UserRole.ADMIN, UserRole.DOCTOR])
-async def get_feedback_by_user_id(
-    request: Request,
-    user_id: str,
+@router.get(
+    "/user_id/{user_id}/robot_id/{robot_id}", response_model=List[FeedbackInDBResponse]
+)
+async def get_feedback_by_user_id_and_robot_id(
+    user_id: str, robot_id: str
 ) -> List[FeedbackInDB]:
     """
     Get feedback details by its user ID.
     """
+    feedbacks: List[
+        FeedbackInDB
+    ] = feedback_service.get_feedback_by_user_id_and_robot_id(user_id, robot_id)
+    return [
+        FeedbackInDBResponse(
+            **feedback.model_dump(),
+            robot_profile=robot_profile_service.get_robot_profile_by_robot_profile_id(
+                feedback.robot_profile_id
+            )
+        )
+        for feedback in feedbacks
+    ]
+
+
+@router.get("/user_id/{user_id}", response_model=List[FeedbackInDBResponse])
+async def get_feedback_by_user_id(user_id: str) -> List[FeedbackInDB]:
+    """
+    Get feedback details by its user ID.
+    """
     feedbacks = feedback_service.get_feedback_by_user_id(user_id)
-    if not feedbacks:
-        raise HTTPException(status_code=404, detail="Feedback not found")
 
-    return feedbacks
-
-
-@router.get("/", response_model=List[FeedbackInDB])
-async def get_all_feedbacks() -> List[FeedbackInDB]:
-    """
-    Get all feedback entries.
-    """
-    return feedback_service.get_all_feedbacks()
+    return [
+        FeedbackInDBResponse(
+            **feedback.model_dump(),
+            robot_profile=robot_profile_service.get_robot_profile_by_robot_profile_id(
+                feedback.robot_profile_id
+            )
+        )
+        for feedback in feedbacks
+    ]
 
 
 @router.put("/{feedback_id}", response_model=bool)
-@requires_roles([UserRole.ADMIN, UserRole.DOCTOR])
 async def update_feedback(
-    request: Request, feedback_id: str, feedback_update: FeedbackUpdate
+    feedback_id: str, feedback_update: FeedbackUpdateRequest
 ) -> bool:
     """
     Update a feedback by its ID.
@@ -80,17 +76,5 @@ async def update_feedback(
     if not feedback_service.update_feedback(feedback_id, feedback_update):
         raise HTTPException(
             status_code=404, detail="Feedback not found or update failed"
-        )
-    return True
-
-
-@router.delete("/{feedback_id}", response_model=bool)
-async def delete_feedback(feedback_id: str) -> bool:
-    """
-    Delete a feedback by its ID.
-    """
-    if not feedback_service.delete_feedback(feedback_id):
-        raise HTTPException(
-            status_code=404, detail="Feedback not found or delete failed"
         )
     return True

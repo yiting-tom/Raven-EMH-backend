@@ -60,8 +60,8 @@ class PollyTTS(BaseTTS):
             region_name=self.aws_region,
         )
 
-    def text_to_speech(
-        self, text: str, output_format: str = "mp3", voice_id: str = "Matthew"
+    async def text_to_speech(
+        self, text: str, output_format: str = "mp3", voice_id: str = "Matthew", **kwargs
     ) -> bytes:
         """
         Convert text to speech by sending a request to AWS Polly.
@@ -69,7 +69,7 @@ class PollyTTS(BaseTTS):
         Parameters:
             text (str): The text that needs to be converted to speech.
             output_format (str): The format of the speech file. Defaults to 'mp3'.
-            voice_id (str): The voice used for the speech generation. Defaults to 'Joanna'.
+            voice_id (str): The voice used for the speech generation. Defaults to 'Matthew'.
 
         Returns:
             bytes: The generated audio in bytes.
@@ -77,10 +77,16 @@ class PollyTTS(BaseTTS):
         Raises:
             AudioGenerationFailed: If the audio generation fails.
         """
+        voice_id, voice_type = voice_id.split(" ")
+        engine = "neural" if "neural" in voice_type.lower() else "standard"
         try:
             # Perform text-to-speech synthesis
             response = self.polly_client.synthesize_speech(
-                Text=text, OutputFormat=output_format, VoiceId=voice_id
+                Text=text,
+                OutputFormat=output_format,
+                VoiceId=voice_id,
+                Engine=engine,
+                **kwargs,
             )
             return response["AudioStream"].read()
         except (BotoCoreError, ClientError) as error:

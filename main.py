@@ -26,10 +26,10 @@ from dotenv import load_dotenv
 # The file name is determined based on the ENV environment variable
 env_fname = f".env.{os.getenv('ENV')}" if os.getenv("ENV") else None
 if env_fname is not None:
-	print(f'using .env file "{env_fname}"')
-	load_dotenv(env_fname)
+    print(f'using .env file "{env_fname}"')
+    load_dotenv(env_fname)
 else:
-	print(f'using env vars')
+    print(f"using env vars")
 
 from configs import firebase_conf
 
@@ -44,6 +44,7 @@ from middlewares.cors_middleware import add_middleware
 from routes.chat import router as chat_router
 from routes.feedback import router as feedback_router
 from routes.user import router as user_router
+from routes.robot_profile import router as robot_profile_router
 from utils.logger import init_logging
 
 # Initialize FastAPI application
@@ -80,6 +81,9 @@ add_middleware(app)
 app.include_router(chat_router, prefix="/chat", tags=["chat"])
 app.include_router(user_router, prefix="/user", tags=["user"])
 app.include_router(feedback_router, prefix="/feedback", tags=["feedback"])
+app.include_router(
+    robot_profile_router, prefix="/robot_profile", tags=["robot_profile"]
+)
 
 # This block checks if this script is run directly and not imported as a module
 # If run directly, it will use Uvicorn to run the FastAPI application

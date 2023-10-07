@@ -1,13 +1,12 @@
 # %%
+import io
 import sys
 from pathlib import Path
+from typing import Union
 
 ROOT = Path(__file__).parent.parent
 MODULE_ROOT = ROOT / "Wav2Lip"
 sys.path.append(str(MODULE_ROOT))
-import platform
-import subprocess
-import time
 
 import audio
 import cv2
@@ -15,19 +14,17 @@ import face_detection
 import numpy as np
 import torch
 from loguru import logger
+from moviepy.editor import AudioFileClip, VideoClip
 from tqdm import tqdm
 from wav2lip_models import Wav2Lip
 
 from configs import paths
 from configs import paths as paths
 
-start = time.time()
-
 
 class Wav2LipAAG:
     def __init__(self):
         self.checkpoint_path = str(MODULE_ROOT / "checkpoints/wav2lip.pth")
-        self.face = str(paths.DATA / "avatar.png")
         self.outfile = str(paths.DATA / "output.mp4")
         self.box = [-1, -1, -1, -1]
         self.crop = [0, -1, 0, -1]
@@ -47,7 +44,6 @@ class Wav2LipAAG:
         logger.info("Using {} for inference.".format(self.device))
 
         self.model = self.load_model(self.checkpoint_path)
-        self.full_frames = [cv2.imread(self.face)]
 
     def get_smoothened_boxes(self, boxes, T):
         for i in range(len(boxes)):
@@ -170,20 +166,18 @@ class Wav2LipAAG:
 
             yield img_batch, mel_batch, frame_batch, coords_batch
 
-    def _load(self, checkpoint_path):
-        if self.device == "cuda":
-            checkpoint = torch.load(checkpoint_path)
-        else:
-            checkpoint = torch.load(
-                checkpoint_path, map_location=lambda storage, loc: storage
-            )
-        return checkpoint
+    def load_model(self, path: Union[Path, str]) -> torch.nn.Module:
+        def _load(checkpoint_path):
+            if self.device == "cuda":
+                return torch.load(checkpoint_path)
 
-    def load_model(self, path):
-        tmp = time.time()
+            return torch.load(
+                f=checkpoint_path,
+                map_location=lambda storage, _: storage,
+            )
+
         model = Wav2Lip()
-        logger.info("Load checkpoint from: {}".format(path))
-        checkpoint = self._load(path)
+        checkpoint = _load(path)
         s = checkpoint["state_dict"]
         new_s = {}
         for k, v in s.items():
@@ -191,18 +185,19 @@ class Wav2LipAAG:
         model.load_state_dict(new_s)
 
         model = model.to(self.device)
-        logger.info(f"model loaded in {time.time()-tmp}")
+        logger.info(f"Loaded checkpoint from '{path}' to device '{self.device}'")
         return model.eval()
 
-    def generate_avatar(self, audio_fname: str):
-        tmp = time.time()
-        wav = audio.load_wav(audio_fname, 16000)
+    def generate_avatar(
+        self, audio_source: Union[io.BytesIO, str, Path], frames_array: np.array
+    ):
+        wav = audio.load_wav(audio_source, 16000)
         mel = audio.melspectrogram(wav)
 
         mel_chunks = []
         mel_idx_multiplier = 80.0 / self.fps
         i = 0
-        while 1:
+        while True:
             start_idx = int(i * mel_idx_multiplier)
             if start_idx + self.mel_step_size > len(mel[0]):
                 mel_chunks.append(mel[:, len(mel[0]) - self.mel_step_size :])
@@ -210,15 +205,13 @@ class Wav2LipAAG:
             mel_chunks.append(mel[:, start_idx : start_idx + self.mel_step_size])
             i += 1
 
-        logger.info(f"mel chunks loaded in {time.time()-tmp}")
-        logger.info("Length of mel chunks: {}".format(len(mel_chunks)))
-
-        full_frames = self.full_frames[: len(mel_chunks)]
+        full_frames = [frames_array]
+        full_frames = full_frames[: len(mel_chunks)]
 
         batch_size = self.wav2lip_batch_size
         gen = self.datagen(full_frames.copy(), mel_chunks)
 
-        logger.info("generated data")
+        frames_list = []
 
         for i, (img_batch, mel_batch, frames, coords) in enumerate(
             tqdm(
@@ -227,15 +220,6 @@ class Wav2LipAAG:
                 desc="Running inference",
             )
         ):
-            if i == 0:
-                frame_h, frame_w = full_frames[0].shape[:-1]
-                out = cv2.VideoWriter(
-                    str(MODULE_ROOT / "temp/result.avi"),
-                    cv2.VideoWriter_fourcc(*"DIVX"),
-                    self.fps,
-                    (frame_w, frame_h),
-                )
-
             img_batch = torch.FloatTensor(np.transpose(img_batch, (0, 3, 1, 2))).to(
                 self.device
             )
@@ -248,28 +232,29 @@ class Wav2LipAAG:
 
             pred = pred.cpu().numpy().transpose(0, 2, 3, 1) * 255.0
 
-            for p, f, c in zip(pred, frames, coords):
-                y1, y2, x1, x2 = c
-                p = cv2.resize(p.astype(np.uint8), (x2 - x1, y2 - y1))
+            for pred, frame, coord in zip(pred, frames, coords):
+                y1, y2, x1, x2 = coord
+                pred = cv2.resize(pred.astype(np.uint8), (x2 - x1, y2 - y1))
+                frame[y1:y2, x1:x2] = pred
+                frames_list.append(frame)
 
-                f[y1:y2, x1:x2] = p
-                out.write(f)
-
-        logger.info(f"generated video in {time.time()-tmp}")
-
-        out.release()
-
-        logger.info("Output video saved at {}".format(self.outfile))
-        command = "ffmpeg -y -i {} -i {} -strict -2 -q:v 1 {}".format(
-            audio_fname, str(MODULE_ROOT / "temp/result.avi"), self.outfile
+        video_clip = VideoClip(
+            make_frame=lambda t: frames_list[int(t * self.fps)],
+            duration=len(frames_list) / self.fps,
         )
-        logger.info("Merging audio and video using: {}".format(command))
-        subprocess.call(
-            command,
-            shell=platform.system() != "Windows",
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        logger.info("Audio Video generated in {}".format(self.outfile))
+        return video_clip
+        audio_clip = AudioFileClip(audio_source)
+        final_clip: VideoClip = video_clip.set_audio(audio_clip)
 
-        return self.outfile
+        # Write the final video to a BytesIO buffer
+        output_buffer = io.BytesIO()
+        final_clip.write_videofile(
+            output_buffer, fps=self.fps, codec="libx264", audio_codec="aac"
+        )
+
+        # Get the video data in bytes
+        video_data = output_buffer.getvalue()
+        output_buffer.close()
+
+        # Now, `video_data` contains your final video as bytes
+        return video_data

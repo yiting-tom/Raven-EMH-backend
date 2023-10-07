@@ -1,4 +1,5 @@
 from services._chat_service import ChatService
 from services._feedback_service import FeedbackService
 from services._multimedia_service import MultimediaService
+from services._robot_profile_service import RobotProfileService
 from services._user_service import UserService

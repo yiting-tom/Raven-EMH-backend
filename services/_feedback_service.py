@@ -2,9 +2,7 @@
 
 from typing import List, Optional
 
-from pymongo.database import Database
-
-from models import FeedbackCreate, FeedbackInDB, FeedbackUpdate
+from models import FeedbackCreate, FeedbackInDB, FeedbackUpdateRequest
 from repositories import FeedbackRepo, IdNotFoundError
 from utils.logger import logger
 
@@ -45,15 +43,6 @@ class FeedbackService:
             logger.warning(f"Feedback with ID {feedback_id} not found.")
             return None
 
-    def get_all_feedbacks(self) -> List[FeedbackInDB]:
-        """
-        Retrieve all feedback.
-
-        Returns:
-            List[FeedbackInDB]: A list of all the retrieved feedback objects.
-        """
-        return self.repo.find_all()
-
     def get_feedback_by_user_id(self, user_id: str) -> List[FeedbackInDB]:
         """
         Retrieve feedback by its user id.
@@ -66,13 +55,30 @@ class FeedbackService:
         """
         return self.repo.find_by_user_id(user_id)
 
-    def update_feedback(self, feedback_id: str, updated_data: FeedbackUpdate) -> bool:
+    def get_feedback_by_user_id_and_robot_id(
+        self, user_id: str, robot_id: str
+    ) -> List[FeedbackInDB]:
+        """
+        Retrieve feedback by its user id and robot id.
+
+        Args:
+            user_id (str): The id of the user whose feedback is to be retrieved.
+            robot_id (str): The id of the robot whose feedback is to be retrieved.
+
+        Returns:
+            List[FeedbackInDB]: A list of all the retrieved feedback objects.
+        """
+        return self.repo.find_by_user_id_and_robot_id(user_id, robot_id)
+
+    def update_feedback(
+        self, feedback_id: str, updated_data: FeedbackUpdateRequest
+    ) -> bool:
         """
         Update feedback with the given id using the provided updated data.
 
         Args:
             feedback_id (str): The id of the feedback to be updated.
-            updated_data (FeedbackUpdate): The new data to update the existing feedback with.
+            updated_data (FeedbackUpdateRequest): The new data to update the existing feedback with.
 
         Returns:
             bool: True if the update was successful, False otherwise.

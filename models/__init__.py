@@ -15,15 +15,29 @@ Imports:
 """
 
 from models._chat import (
-    ChatCreate,
-    ChatCreateInput,
+    ChatCreateRequest,
+    ChatCreateResponse,
+    ChatData,
+    ChatDeleteRequest,
+    ChatGetRequest,
     ChatInDB,
-    ChatInDBOutput,
-    ChatUpdate,
-    Status,
+    ChatInDBCreate,
+    ChatsGetRequest,
 )
-from models._feedback import FeedbackCreate, FeedbackInDB, FeedbackUpdate
+from models._feedback import (
+    FeedbackCreate,
+    FeedbackInDB,
+    FeedbackUpdateRequest,
+    FeedbackInDBResponse,
+)
 from models._multimedia import MultimediaCreate, MultimediaInDB, MultimediaInDBOutput
+from models._robot_profile import (
+    Filter,
+    RobotProfileCreateRequest,
+    RobotProfileInCache,
+    RobotProfileInDB,
+    RobotProfileInDBCreate,
+)
 from models._user import (
     UserDataInFirebaseAuth,
     UserDataInFirestore,

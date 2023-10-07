@@ -12,27 +12,27 @@ Classes:
     - ChatService: Service class that encapsulates chat interactions and its related operations.
 """
 
-from pathlib import Path
-from typing import Any, Dict, List, Optional
 
-from bson import ObjectId
-from gridfs import GridFS
+import re
+import tempfile
+from typing import List, Optional
+
 from loguru import logger
+from moviepy.editor import AudioFileClip, VideoClip
 
 from configs import paths as paths
-from external.chat.openai_api import MedicalChatBot
+from external.chat.openai_api import ChatBot
 from external.tts._base_tts import BaseTTS
 from models import (
-    ChatCreate,
-    ChatCreateInput,
+    ChatCreateRequest,
+    ChatCreateResponse,
+    ChatData,
     ChatInDB,
-    ChatInDBOutput,
-    ChatUpdate,
-    FeedbackCreate,
-    Status,
+    ChatInDBCreate,
+    Filter,
+    RobotProfileInCache,
 )
-from repositories import ChatRepo, IdNotFoundError
-from services._feedback_service import FeedbackService
+from repositories import ChatRepo
 from utils import converter
 from Wav2Lip.wav2lip import Wav2LipAAG
 
@@ -53,204 +53,129 @@ class ChatService:
         self,
         repository: ChatRepo,
         tts: BaseTTS,
-        chatbot: MedicalChatBot,
+        chatbot: ChatBot,
         aag: Wav2LipAAG,
-        grid_fs: GridFS,
-        feedback_service: FeedbackService,
     ):
         self.repo = repository
         self.chatbot = chatbot
         self.tts = tts
         self.aag = aag
-        self.grid_fs = grid_fs
-        self.feedback_service = feedback_service
 
-    def create_chat(
+    async def create_chat(
         self,
-        data: ChatCreateInput,
-        format_dict: Dict[str, str],
-        max_tokens: int = 64,
-    ) -> ChatInDBOutput:
+        chat_data: ChatData,
+        robot_profile: RobotProfileInCache,
+        robot_profile_id: str,
+    ) -> ChatCreateResponse:
         """
-        Creates a new chat record based on the input data.
+        Create a new chat object and save it to the database.
 
         Args:
-            data (ChatCreateInput): The input data for creating a chat.
+            chat (ChatCreate): The chat object to be created.
 
         Returns:
-            ChatInDBOutput: The created chat record.
+            The created chat object, with additional information like its unique ID.
         """
-        context: List[str] = []
+        logger.info(f"Creating chat: {chat_data}")
+        raw_response: str = ""
+        audio_base64: Optional[str] = None
+        video_base64: Optional[str] = None
 
-        def rec_get_context(parent_id: str) -> None:
-            """
-            Helper function to recursively get context from parent chats.
+        if "HISTORY" in robot_profile.options:
+            ...
 
-            Args:
-                parent_id (str): The ID of the parent chat.
-            """
-            if parent_id is None or parent_id == "":
-                return
-            parent_in_db: ChatInDB = self.repo.find_by_id(parent_id)
-            context.insert(0, parent_in_db.response)
-            context.insert(0, parent_in_db.request)
-            rec_get_context(parent_in_db.parent_id)
+        if "MEDICAL KNOWLEDGE" in robot_profile.options:
+            ...
 
-        rec_get_context(data.parent_id)
-        context.append(data.request)
-        logger.info(f"Context length: {len(context)//2}")
-        # Generate response by chatbot
-        response: str = self.chatbot.chat(
-            user_assistants=context,
-            format_dict=format_dict,
-            max_tokens=max_tokens,
+        # Generate raw response
+        raw_response = self.chatbot.chat(
+            system_msg=robot_profile.prompt,
+            user_assistants=chat_data.history + [chat_data.message],
+            model=robot_profile.model,
         )
-        logger.debug(f"Response from {self.chatbot}: {response}")
 
-        # Generate audio by text-to-speech(TTS)
-        audio_data: bytes = self.tts.text_to_speech(response)
-        audio_fname: Path = paths.DATA / "temp.mp3"
-        audio_fname.write_bytes(audio_data)
+        # Filters
+        if len(robot_profile.filters) > 0:
+            logger.info("Applying filters", robot_profile.filters)
 
-        # Generate video by animated-avatar-generation(AAG)
-        video_fname: str = self.aag.generate_avatar(audio_fname)
-        video_data: bytes = converter.file2bytes(video_fname)
+            def filter_func(message: str, filter: Filter):
+                if filter.isRegex:
+                    result = re.search(filter.prompt, message)
+                    if result:
+                        return result.group(0)
+                    return message
+                filtered_message = self.chatbot.chat(
+                    system_msg=filter.prompt,
+                    user_assistants=[message],
+                    model=filter.model or "gpt-3.5-turbo",
+                )
+                return filtered_message
 
-        # Store audio and video in GridFS
-        audio_id: ObjectId = self.grid_fs.put(audio_data, content_type="audio/mp3")
-        video_id: ObjectId = self.grid_fs.put(video_data, content_type="video/mp4")
+            for filter in robot_profile.filters:
+                logger.info("Applying filter", filter.name)
+                raw_response = filter_func(raw_response, filter)
 
-        # Create new feedback
-        new_feedback = FeedbackCreate(
-            user_id=data.user_id,
-            username=data.username,
-            chat_id=data.parent_id,
-            request=data.request,
-            response=response,
-            parent_id=data.parent_id,
-            annotations=[],
-        )
-        self.feedback_service.create_feedback(new_feedback)
-
-        chat_in_db: ChatInDB = self.repo.create(
-            ChatCreate(
-                user_id=data.user_id,
-                username=data.username,
-                request=data.request,
-                parent_id=data.parent_id,
-                response=response,
-                audio_id=str(audio_id),
-                video_id=str(video_id),
-                status=Status.ACTIVATING,
-                children_ids=[],
+        # Audio
+        if "VOICE" in robot_profile.options:
+            logger.info("Generating audio")
+            audio_bytes: bytes = await self.tts.text_to_speech(
+                text=raw_response,
+                voice_id=robot_profile.voice,
             )
+            audio_base64: str = converter.bytes2base64(audio_bytes)
+
+            # Video
+            if "VIDEO" in robot_profile.options:
+                logger.info("Generating video")
+
+                audio_path = converter.bytes2bytesio(audio_bytes)
+                video_clip = self.aag.generate_avatar(
+                    audio_source=audio_path,
+                    frames_array=robot_profile.image_np_array,
+                )
+
+                with tempfile.NamedTemporaryFile(
+                    delete=True, suffix=".mp3"
+                ) as temp_audio_file:
+                    temp_audio_file.write(audio_bytes)
+                    audio_clip = AudioFileClip(temp_audio_file.name)
+                    final_clip: VideoClip = video_clip.set_audio(audio_clip)
+                    video_base64: str = converter.clip_to_base64(
+                        final_clip, fps=25, codec="libx264"
+                    )
+
+        # Save to database
+        chat_in_db_create = ChatInDBCreate(
+            user_id=chat_data.user_id,
+            robot_id=robot_profile.robot_id,
+            robot_profile_id=robot_profile_id,
+            parent_id=chat_data.parent_id,
+            children_ids=[],
+            request=chat_data.message,
+            response=raw_response,
         )
-        # Update parent's children_ids if parent_id is not None
-        if data.parent_id is not None and data.parent_id != "":
-            # Get parent chat record
-            parent_in_db: ChatInDB = self.repo.find_by_id(data.parent_id)
-            # Create new children_ids list with the new chat record's ID appended
-            new_children_ids: List[str] = parent_in_db.children_ids + [chat_in_db.id]
-            # Update parent chat record
-            self.update_chat(data.parent_id, ChatUpdate(children_ids=new_children_ids))
 
-        return self.__convert_indb_to_indboutput(chat_in_db)
+        chat_id: str = self.repo.create_chat(chat_in_db_create)
 
-    def get_chat_by_id(self, id: str) -> Optional[ChatInDBOutput]:
-        """
-        Retrieves a chat record by its ID.
-
-        Args:
-            id (str): The ID of the chat record to retrieve.
-
-        Returns:
-            Optional[ChatInDBOutput]: The retrieved chat record or None if not found.
-        """
-        chat_in_db: ChatInDB = self.repo.find_by_id(id)
-        return self.__convert_indb_to_indboutput(chat_in_db)
-
-    def get_all_chats(self) -> List[ChatInDB]:
-        """
-        Retrieves all chat records.
-
-        Returns:
-            List[ChatInDB]: A list of all chat records.
-        """
-        return [
-            self.__convert_indb_to_indboutput(chat_in_db)
-            for chat_in_db in self.repo.find_all()
-        ]
-
-    def update_chat(self, id: str, data: ChatUpdate) -> ChatInDBOutput:
-        """
-        Updates a chat record by its ID.
-
-        Args:
-            id (str): The ID of the chat record to update.
-            data (ChatUpdate): The data to update the chat record with.
-
-        Returns:
-            ChatInDBOutput: The updated chat record.
-        """
-        chat_in_db: ChatInDB = self.repo.update(id, data)
-        return self.__convert_indb_to_indboutput(chat_in_db)
-
-    def archive_chat(self, id: str) -> None:
-        """
-        Archives a chat record by its ID.
-
-        Args:
-            id (str): The ID of the chat record to archive.
-        """
-        chat_in_db: ChatInDB = self.repo.find_by_id(id)
-        chat_in_db.status = Status.ARCHIVED
-        self.repo.update(id, ChatUpdate(status=Status.ARCHIVED))
-        # Recursively archive all children chats
-        for child_id in chat_in_db.children_ids:
-            self.archive_chat(child_id)
-
-    def delete_chat(self, id: str) -> None:
-        """
-        Deletes a chat record by its ID.
-
-        Args:
-            id (str): The ID of the chat record to delete.
-        """
-        return self.repo.delete(id)
-
-    def __convert_indb_to_indboutput(
-        self,
-        chat_in_db: ChatInDB,
-    ) -> ChatInDBOutput:
-        """
-        Helper function to convert ChatInDB object to ChatInDBOutput.
-
-        Args:
-            chat_in_db (ChatInDB): The chat record in database format.
-
-        Returns:
-            ChatInDBOutput: The chat record in output format.
-        """
-        chat_dict: Dict[str, Any] = chat_in_db.model_dump()
-        chat_dict["audio"] = converter.bytes2base64(
-            self.grid_fs.get(ObjectId(chat_dict.pop("audio_id"))).read()
+        chat_in_db_resopnse = ChatCreateResponse(
+            id=chat_id,
+            request=chat_data.message,
+            response=raw_response,
+            audio_base64=audio_base64,
+            video_base64=video_base64,
         )
-        chat_dict["video"] = converter.bytes2base64(
-            self.grid_fs.get(ObjectId(chat_dict.pop("video_id"))).read()
-        )
-        return ChatInDBOutput(**chat_dict)
 
-    def get_chat_by_user_id(self, user_id: str) -> List[ChatInDBOutput]:
+        return chat_in_db_resopnse
+
+    async def get_chats_by_user_id_and_robot_id(
+        self, user_id: str, robot_id: str, order_by: Optional[str] = "created_at"
+    ) -> List[ChatInDB]:
         """
-        Retrieves all chat records by user ID.
-
-        Args:
-            user_id (str): The ID of the user.
+        Retrieve all chat objects.
 
         Returns:
-            List[ChatInDBOutput]: A list of all chat records by user ID.
+            A list of all chat objects.
         """
-        return [
-            self.__convert_indb_to_indboutput(chat_in_db)
-            for chat_in_db in self.repo.find_by_user_id(user_id)
-        ]
+        return self.repo.get_chats_by_user_id_and_robot_id(
+            user_id, robot_id, order_by=order_by
+        )

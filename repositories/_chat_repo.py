@@ -1,142 +1,66 @@
-"""
-_chat_repo.py
-
-This module contains the ChatRepo class, which handles interactions between
-the FastAPI application and the underlying database for chat objects.
-
-Author:
-    Yi-Ting Li (yitingli.public@gmail.com)
-
-Classes:
-    - ChatRepo: Repository for handling database interactions related to chat objects.
-"""
-
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from bson import ObjectId
 from pymongo.collection import Collection
 from pymongo.database import Database
 
-from models._chat import ChatCreate, ChatInDB, ChatUpdate
-from repositories._base_repo import BaseRepo, IdNotFoundError
-from utils.logger import logger
+from models import ChatInDB, ChatInDBCreate
 
 
-class ChatRepo(BaseRepo):
-    """
-    Repository for handling database interactions related to chat objects.
+class ChatRepo:
+    def __init__(self, db: Database, collection: Collection):
+        # Create a MongoClient and specify the database and collection
+        self.db: Database = db
+        self.collection: Collection = collection
 
-    Attributes:
-        COLLECTION_NAME (str): The name of the MongoDB collection for storing chat objects.
-    """
+    def create_chat(self, chat: ChatInDBCreate) -> str:
+        # Insert a new chat document into the database and return its id
+        result = self.collection.insert_one(chat.model_dump())
+        return str(result.inserted_id)
 
-    COLLECTION_NAME = "chat"
+    def get_chat(self, chat_id: str) -> Optional[ChatInDB]:
+        # Find a chat document by its id
+        chat_data = self.collection.find_one({"_id": ObjectId(chat_id)})
+        if chat_data:
+            return ChatInDB(**chat_data)
+        return None
 
-    def __init__(self, database: Database, collection: Collection):
-        """
-        Initialize the ChatRepo instance.
+    def get_chat_by_user_id_and_robot_id(
+        self,
+        user_id: str,
+        robot_id: str,
+    ) -> Optional[ChatInDB]:
+        # Find a chat document by its id
+        chat_data = self.collection.find_one({"user_id": user_id, "robot_id": robot_id})
+        if chat_data:
+            return ChatInDB(**self.object_id_to_str(chat_data))
+        return None
 
-        Args:
-            database (Database): The MongoDB database instance.
-            collection (Collection): The MongoDB collection for storing chat objects.
-        """
-        super().__init__(database, collection)
+    @staticmethod
+    def object_id_to_str(obj):
+        obj["id"] = str(obj["_id"])
+        del obj["_id"]
+        return obj
 
-    def create(self, data: ChatCreate) -> ChatInDB:
-        """
-        Create a new chat object in the database.
+    def get_chats_by_user_id_and_robot_id(
+        self,
+        user_id: str,
+        robot_id: str,
+        order_by: Optional[str] = "created_at",
+    ) -> List[ChatInDB]:
+        # Find a chat document by its id
+        chat_data = self.collection.find({"user_id": user_id, "robot_id": robot_id})
 
-        Args:
-            data (ChatCreate): The data of the chat object to be created.
+        if chat_data is None:
+            return []
 
-        Returns:
-            ChatInDB: The created chat object.
-        """
-        chat = self.collection.insert_one(data.model_dump())
-        logger.info(f"Chat created {chat.inserted_id}")
-        return ChatInDB(
-            id=str(chat.inserted_id),
-            **data.model_dump(),
-        )
+        result = [ChatInDB(**self.object_id_to_str(chat)) for chat in chat_data]
+        if order_by:
+            result.sort(key=lambda x: getattr(x, order_by))
 
-    def find_by_id(self, id: str) -> ChatInDB:
-        """
-        Retrieve a chat object by its id from the database.
+        return result  # Ensure a list is always returned
 
-        Args:
-            id (str): The id of the chat object to be retrieved.
-
-        Returns:
-            ChatInDB: The found chat object.
-
-        Raises:
-            IdNotFoundError: If the chat object with the specified id is not found in the database.
-        """
-        chat_dict = self.collection.find_one({"_id": ObjectId(id)})
-        if chat_dict:
-            chat_in_db = ChatInDB(**self._id2str(chat_dict))
-            logger.info(f"Chat found {chat_in_db.id}")
-            return chat_in_db
-        raise IdNotFoundError(f"Chat with id {id} not found")
-
-    def find_all(self) -> List[ChatInDB]:
-        """
-        Retrieve all chat objects from the database.
-
-        Returns:
-            List[ChatInDB]: A list of found chat objects.
-        """
-        result = [
-            ChatInDB(**self._id2str(chat_in_db))
-            for chat_in_db in self.collection.find()
-        ]
-        logger.info(f"Chat found {len(result)}")
-        return result
-
-    def update(self, id: Any, updated_data: ChatUpdate) -> ChatInDB:
-        """
-        Update a chat object in the database.
-
-        Args:
-            id (Any): The id of the chat object to be updated.
-            updated_data (ChatUpdate): The new data for the chat object.
-
-        Returns:
-            ChatInDB: The updated chat object.
-        """
-        self.collection.update_one(
-            {"_id": ObjectId(id)},
-            {"$set": updated_data.model_dump(exclude_unset=True)},
-        )
-        chat_in_db = self.find_by_id(id)
-        logger.info(f"Chat {id} updated")
-        return chat_in_db
-
-    def delete(self, id: Any):
-        """
-        Delete a chat object with the given id from the database.
-
-        Args:
-            id (Any): The id of the chat object to be deleted.
-        """
-        self.collection.delete_one({"_id": ObjectId(id)})
-        logger.info(f"Chat {id} deleted")
-
-    def find_by_user_id(self, user_id: str, query: Optional[Dict] = None):
-        """
-        Retrieve all chat objects by user ID.
-
-        Args:
-            user_id (str): The ID of the user.
-
-        Returns:
-            List[ChatInDB]: A list of all chat objects by user ID.
-        """
-        query = query or {}
-        query["user_id"] = user_id
-        result = [
-            ChatInDB(**self._id2str(chat_in_db))
-            for chat_in_db in self.collection.find(query)
-        ]
-        logger.info(f"Chat found {len(result)}")
-        return result
+    def delete_chat(self, chat_id: str) -> bool:
+        # Delete a chat document by its id and return whether the operation was successful
+        result = self.collection.delete_one({"_id": ObjectId(chat_id)})
+        return result.deleted_count > 0

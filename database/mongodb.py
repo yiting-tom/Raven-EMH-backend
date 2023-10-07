@@ -13,6 +13,7 @@ Author:
 """
 
 import os
+from typing import Any, Dict, Optional
 
 from fastapi import FastAPI
 from gridfs import GridFS
@@ -20,6 +21,7 @@ from pymongo import MongoClient
 from pymongo.collection import Collection
 from pymongo.database import Database
 
+from database._adapter import DatabaseAdapter
 from database._base_database import BaseDatabase, BaseDatabaseConnector
 from utils.logger import logger
 
@@ -125,3 +127,29 @@ class MongoDBConnector(BaseDatabaseConnector):
         Registers the close_connection method of the MongoDB instance to the shutdown event of the FastAPI application.
         """
         self.app.add_event_handler("shutdown", self.database.close_connection)
+
+
+class MongoDBAdapter(DatabaseAdapter):
+    def __init__(self, connection_string: str):
+        self.client = MongoClient(connection_string)
+        self.db = self.client.get_database()
+
+    def create(self, collection: str, document: Dict[str, Any]) -> Dict[str, Any]:
+        result = self.db[collection].insert_one(document)
+        return {"id": str(result.inserted_id)}
+
+    def read(self, collection: str, filter: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        doc = self.db[collection].find_one(filter)
+        if doc:
+            doc["id"] = str(doc["_id"])
+            del doc["_id"]
+            return doc
+        return None
+
+    def update(
+        self, collection: str, filter: Dict[str, Any], update: Dict[str, Any]
+    ) -> None:
+        self.db[collection].update_one(filter, {"$set": update})
+
+    def delete(self, collection: str, filter: Dict[str, Any]) -> None:
+        self.db[collection].delete_one(filter)

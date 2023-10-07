@@ -1,7 +1,12 @@
+from typing import Any, Dict, Optional
+
 import firebase_admin
 from fastapi import FastAPI
 from firebase_admin import firestore
 
+from database._adapter import (
+    DatabaseAdapter,
+)  # Assume DatabaseAdapter is in a module named database_adapter
 from database._base_database import BaseDatabase, BaseDatabaseConnector
 
 
@@ -77,3 +82,29 @@ class FirebaseConnector(BaseDatabaseConnector):
         to the shutdown event of the FastAPI application.
         """
         self.app.add_event_handler("shutdown", self.database.close_connection)
+
+
+class FirestoreAdapter(DatabaseAdapter):
+    def __init__(self):
+        self.db = firestore.Client()
+
+    def create(self, collection: str, document: Dict[str, Any]) -> Dict[str, Any]:
+        doc_ref = self.db.collection(collection).add(document)
+        return {"id": doc_ref.id}
+
+    def read(self, collection: str, filter: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        docs = (
+            self.db.collection(collection)
+            .where(list(filter.keys())[0], "==", list(filter.values())[0])
+            .stream()
+        )
+        for doc in docs:
+            return {"id": doc.id, **doc.to_dict()}
+        return None
+
+    def update(self, collection: str, doc_id: str, update: Dict[str, Any]) -> None:
+        doc_ref = self.db.collection(collection).document(doc_id)
+        doc_ref.update(update)
+
+    def delete(self, collection: str, doc_id: str) -> None:
+        self.db.collection(collection).document(doc_id).delete()
