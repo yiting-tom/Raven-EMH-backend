@@ -110,7 +110,7 @@ async def create_chat(chat: ChatCreateRequest):
         )
     )
 
-    chat_response: ChatCreateResponse = await chat_service.create_chat(
+    chat_response, workflow = await chat_service.create_chat(
         chat_data_request,
         robot_profile_cached,
         robot_profile_id,
@@ -124,6 +124,7 @@ async def create_chat(chat: ChatCreateRequest):
         request=chat_response.request,
         response=chat_response.response,
         robot_profile_id=robot_profile_id,
+        workflow=workflow,
     )
     _ = feedback_service.create_feedback(feedback)
     return chat_response

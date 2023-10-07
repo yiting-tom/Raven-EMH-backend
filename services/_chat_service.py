@@ -16,6 +16,7 @@ Classes:
 import re
 import tempfile
 from typing import List, Optional
+from time import time
 
 from loguru import logger
 from moviepy.editor import AudioFileClip, VideoClip
@@ -80,19 +81,26 @@ class ChatService:
         raw_response: str = ""
         audio_base64: Optional[str] = None
         video_base64: Optional[str] = None
+        workflow: List[str] = []
 
+        workflow.append("Dialog: " + "\n".join(chat_data.history))
+        workflow.append("User Request: " + chat_data.message)
         if "HISTORY" in robot_profile.options:
+            workflow.append(f"Applied History: ")
             ...
 
         if "MEDICAL KNOWLEDGE" in robot_profile.options:
+            workflow.append(f"Applied Medical Knowledge: ")
             ...
 
         # Generate raw response
+        time_start = time()
         raw_response = self.chatbot.chat(
             system_msg=robot_profile.prompt,
             user_assistants=chat_data.history + [chat_data.message],
             model=robot_profile.model,
         )
+        workflow.append(f"Raw Response({time() - time_start:0.2f}): {raw_response}")
 
         # Filters
         if len(robot_profile.filters) > 0:
@@ -111,23 +119,30 @@ class ChatService:
                 )
                 return filtered_message
 
-            for filter in robot_profile.filters:
+            for i, filter in enumerate(robot_profile.filters, 1):
                 logger.info("Applying filter", filter.name)
+                time_start = time()
                 raw_response = filter_func(raw_response, filter)
+                workflow.append(
+                    f"Applied Filter-{i} '{filter.name}'({time() - time_start:0.2f}): {raw_response}"
+                )
 
         # Audio
         if "VOICE" in robot_profile.options:
             logger.info("Generating audio")
+            time_start = time()
             audio_bytes: bytes = await self.tts.text_to_speech(
                 text=raw_response,
                 voice_id=robot_profile.voice,
             )
             audio_base64: str = converter.bytes2base64(audio_bytes)
+            workflow.append(f"Applied Voice Generation({time()-time_start:0.2f})")
 
             # Video
             if "VIDEO" in robot_profile.options:
                 logger.info("Generating video")
 
+                time_start = time()
                 audio_path = converter.bytes2bytesio(audio_bytes)
                 video_clip = self.aag.generate_avatar(
                     audio_source=audio_path,
@@ -143,6 +158,7 @@ class ChatService:
                     video_base64: str = converter.clip_to_base64(
                         final_clip, fps=25, codec="libx264"
                     )
+                workflow.append(f"Applied Video Generation({time()-time_start:0.2f})")
 
         # Save to database
         chat_in_db_create = ChatInDBCreate(
@@ -165,7 +181,7 @@ class ChatService:
             video_base64=video_base64,
         )
 
-        return chat_in_db_resopnse
+        return chat_in_db_resopnse, workflow
 
     async def get_chats_by_user_id_and_robot_id(
         self, user_id: str, robot_id: str, order_by: Optional[str] = "created_at"

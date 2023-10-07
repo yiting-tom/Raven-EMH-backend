@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, Field
 from models._robot_profile import RobotProfileInDB
@@ -38,6 +38,7 @@ class FeedbackUpdateRequest(BaseModel):
 
 
 class FeedbackCreate(FeedbackBase):
+    workflow: List[str]
     ...
 
     class Config:
@@ -82,6 +83,12 @@ class FeedbackInDB(FeedbackCreate):
                 "created_at": "2023-10-10 10:00",
                 "updated_at": "2023-10-10 10:00",
             },
+            "workflow": [
+                "History: ...",
+                "User request: ...",
+                "Raw response: ...",
+                "Applied filter 'filterxxx': ...",
+            ],
         }
 
 
@@ -124,5 +131,11 @@ class FeedbackInDBResponse(FeedbackCreate):
                 },
                 "created_at": "2023-10-10 10:00",
                 "updated_at": "2023-10-10 10:00",
+                "workflow": [
+                    "History: ...",
+                    "User request: ...",
+                    "Raw response: ...",
+                    "Applied filter 'filterxxx': ...",
+                ],
             },
         }
