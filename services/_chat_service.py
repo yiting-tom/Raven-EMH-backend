@@ -14,6 +14,8 @@ Classes:
 
 
 import re
+import os
+import requests
 import tempfile
 from typing import List, Optional
 from time import time
@@ -143,21 +145,15 @@ class ChatService:
                 logger.info("Generating video")
 
                 time_start = time()
-                audio_path = converter.bytes2bytesio(audio_bytes)
-                video_clip = self.aag.generate_avatar(
-                    audio_source=audio_path,
-                    frames_array=robot_profile.image_np_array,
+                resp = requests.post(
+                    f'{os.getenv("APP_AAG_SERVER_HOST")}:{os.getenv("APP_AAG_SERVER_PORT")}/v0/render',
+                    json={
+                        "audio_base64": audio_base64,
+                        "image_url": robot_profile.imageURL,
+                    },
                 )
-
-                with tempfile.NamedTemporaryFile(
-                    delete=True, suffix=".mp3"
-                ) as temp_audio_file:
-                    temp_audio_file.write(audio_bytes)
-                    audio_clip = AudioFileClip(temp_audio_file.name)
-                    final_clip: VideoClip = video_clip.set_audio(audio_clip)
-                    video_base64: str = converter.clip_to_base64(
-                        final_clip, fps=25, codec="libx264"
-                    )
+                resp = resp.json()
+                video_base64 = resp["video_base64"]
                 workflow.append(f"Applied Video Generation({time()-time_start:0.2f})")
 
         # Save to database

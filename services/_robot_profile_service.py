@@ -83,11 +83,9 @@ class RobotProfileService:
         # Drop unused fileds
         for dropped_field in ["name", "description"]:
             del robot_profile_dict[dropped_field]
-        image_np_array: np.array = converter.url2numpy(
-            robot_profile_dict.pop("imageURL")
-        )
+
         cached_robot_profile = RobotProfileInCache(
-            **robot_profile_dict, image_np_array=image_np_array
+            **robot_profile_dict,
         )
         self.robot_profiles_cache[robot_profile_request.robot_id] = cached_robot_profile
         return cached_robot_profile

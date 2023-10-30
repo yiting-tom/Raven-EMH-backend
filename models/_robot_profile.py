@@ -32,7 +32,7 @@ class RobotProfileInCache(BaseModel):
     filters: List[Filter]
     options: List[str]
     prompt: str
-    image_np_array: np.array
+    imageURL: str
 
     class Config:
         arbitrary_types_allowed = True
