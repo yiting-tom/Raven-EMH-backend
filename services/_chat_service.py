@@ -146,7 +146,7 @@ class ChatService:
 
                 time_start = time()
                 resp = requests.post(
-                    f'{os.getenv("APP_AAG_SERVER_HOST")}:{os.getenv("APP_AAG_SERVER_PORT")}/v0/render',
+                    os.getenv("APP_AAG_SERVICE_URL"),
                     json={
                         "audio_base64": audio_base64,
                         "image_url": robot_profile.imageURL,
