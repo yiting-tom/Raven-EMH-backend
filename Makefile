@@ -1,3 +1,16 @@
+define docker_build
+	docker build -t ravenapp/emh-robot-core:v1.0.0 .
+endef
+
+define docker_run
+	docker run -it --rm \
+		--name emh-robot-core \
+		-p 8000:8000 \
+		--network  v0_emh-robot-net \
+		-v $(PWD):/app/ \
+		ravenapp/emh-robot-core:v1.0.0
+endef
+
 define docker_compose_up
 	docker compose --env-file .env.$(1) up -d
 endef
