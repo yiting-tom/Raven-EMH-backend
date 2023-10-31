@@ -32,7 +32,6 @@ from models import (
 )
 from repositories import ChatRepo, FeedbackRepo, RobotProfileRepo
 from services import ChatService, FeedbackService, RobotProfileService
-from Wav2Lip.wav2lip import Wav2LipAAG
 
 router = APIRouter()
 
@@ -40,7 +39,6 @@ router = APIRouter()
 mongo_db = MongoDB()
 chatbot = ChatBot()
 tts = PollyTTS()
-aag = Wav2LipAAG()
 
 # Set up the chat repository
 chat_repo = ChatRepo(
@@ -61,7 +59,6 @@ chat_service = ChatService(
     repository=chat_repo,
     chatbot=chatbot,
     tts=tts,
-    aag=aag,
 )
 
 robot_profile_service = RobotProfileService(

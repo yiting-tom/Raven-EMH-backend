@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
 
-import numpy as np
 from pydantic import BaseModel, Field
 
 # 1. request from frontend: ChatCreateRequest, ChatDeleteRequest, ChatGetRequest, (ChatUpdateRequest - not implemented)
@@ -32,7 +31,7 @@ class RobotProfileInCache(BaseModel):
     filters: List[Filter]
     options: List[str]
     prompt: str
-    image_np_array: np.array
+    imageURL: str
 
     class Config:
         arbitrary_types_allowed = True

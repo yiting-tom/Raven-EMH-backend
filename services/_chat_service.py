@@ -14,18 +14,17 @@ Classes:
 
 
 import re
-import tempfile
+import os
+import requests
 from typing import List, Optional
 from time import time
 
 from loguru import logger
-from moviepy.editor import AudioFileClip, VideoClip
 
 from configs import paths as paths
 from external.chat.openai_api import ChatBot
 from external.tts._base_tts import BaseTTS
 from models import (
-    ChatCreateRequest,
     ChatCreateResponse,
     ChatData,
     ChatInDB,
@@ -35,7 +34,6 @@ from models import (
 )
 from repositories import ChatRepo
 from utils import converter
-from Wav2Lip.wav2lip import Wav2LipAAG
 
 
 class ChatService:
@@ -46,7 +44,6 @@ class ChatService:
         repo (ChatRepo): Repository for chat records.
         chatbot (MedicalChatBot): Chatbot service for generating responses.
         tts (BaseTTS): Text-to-speech service.
-        aag (Wav2LipAAG): Avatar generation service.
         grid_fs (GridFS): File storage service for storing multimedia files.
     """
 
@@ -55,12 +52,10 @@ class ChatService:
         repository: ChatRepo,
         tts: BaseTTS,
         chatbot: ChatBot,
-        aag: Wav2LipAAG,
     ):
         self.repo = repository
         self.chatbot = chatbot
         self.tts = tts
-        self.aag = aag
 
     async def create_chat(
         self,
@@ -143,21 +138,15 @@ class ChatService:
                 logger.info("Generating video")
 
                 time_start = time()
-                audio_path = converter.bytes2bytesio(audio_bytes)
-                video_clip = self.aag.generate_avatar(
-                    audio_source=audio_path,
-                    frames_array=robot_profile.image_np_array,
+                resp = requests.post(
+                    os.getenv("APP_AAG_SERVICE_URL"),
+                    json={
+                        "audio_base64": audio_base64,
+                        "image_url": robot_profile.imageURL,
+                    },
                 )
-
-                with tempfile.NamedTemporaryFile(
-                    delete=True, suffix=".mp3"
-                ) as temp_audio_file:
-                    temp_audio_file.write(audio_bytes)
-                    audio_clip = AudioFileClip(temp_audio_file.name)
-                    final_clip: VideoClip = video_clip.set_audio(audio_clip)
-                    video_base64: str = converter.clip_to_base64(
-                        final_clip, fps=25, codec="libx264"
-                    )
+                resp = resp.json()
+                video_base64 = resp["video_base64"]
                 workflow.append(f"Applied Video Generation({time()-time_start:0.2f})")
 
         # Save to database
