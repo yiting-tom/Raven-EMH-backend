@@ -2,27 +2,68 @@ version: "3.8"
 
 services:
   db:
-    image: mongo
+    image: mongo:7.0.2-jammy
+    container_name: emh-robot-mongo
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: "${MONGO_INITDB_ROOT_USERNAME}"
-      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_INITDB_ROOT_PASSWORD}"
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
     ports:
-      - "${MONGODB_PORT}:${MONGODB_PORT}"
+      - 27017:27017
     volumes:
-      - mongodb_data_container:/data/db
-
-  mongo-express:
-    image: mongo-express
-    restart: always
-    environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: "${MONGO_INITDB_ROOT_USERNAME}"
-      ME_CONFIG_MONGODB_ADMINPASSWORD: "${MONGO_INITDB_ROOT_PASSWORD}"
-      ME_CONFIG_MONGODB_SERVER: "db"
+      - emh-robot-mongo-data:/data/db
+    networks:
+      - emh-robot-net
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portaniner
     ports:
-      - "8081:8081"
+      - "8880:8000"
+      - "9443:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    restart: always
+
+  backend:
+    restart: always
+    build:
+      dockerfile: Dockerfile
+    image: ravenapp/emh-robot-core:v1.0.0
+    container_name: emh-robot-core
+    environment:
+      - ENV=prod
+    volumes:
+      - .:/app/
+    ports:
+      - 8000:8000
     depends_on:
       - db
+    env_file:
+      - .env.prod
+    networks:
+      - emh-robot-net
+    command: ["make", "prod"]
+
+  nginxproxymanager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    container_name: emh-robot-proxy
+    ports:
+      - '2052:80'
+      - '8080:81'
+      - '443:443'
+    volumes:
+      - emh-nginx-proxy-manager-data:/data
+      - ./letsencrypt:/etc/letsencrypt
+
+networks:
+  emh-robot-net:
+    driver: bridge
 
 volumes:
-  mongodb_data_container:
+  emh-robot-mongo-data:
+    driver: local
+  emh-nginx-proxy-manager-data:
+    driver: local
+  portainer_data:

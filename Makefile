@@ -29,7 +29,6 @@ ENVS = dev stag prod
 
 # General Rules
 $(ENVS):
-	$(call docker_compose_up,$@)
 	$(call run_python,$@)
 
 $(addsuffix -up,$(ENVS)):

@@ -182,3 +182,4 @@ evaluation/test_filelists/lr*.txt
 !.env.example
 Wav2Lip/temp/*
 gradient-deployment.yaml
+*-service-account-*.json

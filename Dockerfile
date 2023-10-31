@@ -1,7 +1,7 @@
 FROM python:3.10.12-slim-buster
 
 # Set up the app
-RUN mkdir -p /app /data/db && cd /app/
+RUN mkdir -p /app && cd /app/
 WORKDIR /app
 RUN chmod -R a+w /app
 
@@ -16,13 +16,10 @@ RUN export DEBIAN_FRONTEND=noninteractive RUNLEVEL=1 ; \
 RUN rm -rf /var/lib/apt/lists/*
 
 # clone project
-RUN git clone https://github.com/yiting-tom/Raven-EMH-backend.git /app
+COPY requirements.txt /app/requirements
 
 # Install Python requirements
 RUN pip3 install --upgrade setuptools
-RUN pip3 install -r requirements.txt
+RUN pip3 install -r /app/requirements.txt
 
-# downlaod the model
-RUN gdown "https://drive.google.com/uc?id=1ejJUSuMb2v4u9gA7QkcMp8kXaKt0N4gI" -O /app/Wav2Lip/checkpoints/wav2lip.pth
 
-ENTRYPOINT ["entrypoint.sh"]
