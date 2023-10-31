@@ -44,7 +44,6 @@ class ChatService:
         repo (ChatRepo): Repository for chat records.
         chatbot (MedicalChatBot): Chatbot service for generating responses.
         tts (BaseTTS): Text-to-speech service.
-        aag (Wav2LipAAG): Avatar generation service.
         grid_fs (GridFS): File storage service for storing multimedia files.
     """
 
@@ -53,12 +52,10 @@ class ChatService:
         repository: ChatRepo,
         tts: BaseTTS,
         chatbot: ChatBot,
-        aag: Wav2LipAAG,
     ):
         self.repo = repository
         self.chatbot = chatbot
         self.tts = tts
-        self.aag = aag
 
     async def create_chat(
         self,
