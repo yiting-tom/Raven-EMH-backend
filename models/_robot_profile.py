@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import List, Optional
 
-import numpy as np
 from pydantic import BaseModel, Field
 
 # 1. request from frontend: ChatCreateRequest, ChatDeleteRequest, ChatGetRequest, (ChatUpdateRequest - not implemented)

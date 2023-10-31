@@ -16,18 +16,15 @@ Classes:
 import re
 import os
 import requests
-import tempfile
 from typing import List, Optional
 from time import time
 
 from loguru import logger
-from moviepy.editor import AudioFileClip, VideoClip
 
 from configs import paths as paths
 from external.chat.openai_api import ChatBot
 from external.tts._base_tts import BaseTTS
 from models import (
-    ChatCreateRequest,
     ChatCreateResponse,
     ChatData,
     ChatInDB,
@@ -37,7 +34,6 @@ from models import (
 )
 from repositories import ChatRepo
 from utils import converter
-from Wav2Lip.wav2lip import Wav2LipAAG
 
 
 class ChatService:

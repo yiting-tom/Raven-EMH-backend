@@ -13,22 +13,15 @@ Classes:
 """
 
 
-import re
-import tempfile
-from typing import Dict, List, Optional
-
-import numpy as np
-from loguru import logger
+from typing import Optional
 
 from models import (
-    Filter,
     RobotProfileCreateRequest,
     RobotProfileInCache,
     RobotProfileInDB,
     RobotProfileInDBCreate,
 )
 from repositories import RobotProfileRepo
-from utils import converter
 
 
 class RobotProfileService:
