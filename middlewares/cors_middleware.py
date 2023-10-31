@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # to this FastAPI application. For example, if your frontend is
 # running on http://localhost:3000, you would add that URL to this list.
 origins = [
-    "http://localhost:3000",  # React server
+    "*",
 ]
 
 
