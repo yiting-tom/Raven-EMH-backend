@@ -21,5 +21,3 @@ COPY requirements.txt /app/requirements
 # Install Python requirements
 RUN pip3 install --upgrade setuptools
 RUN pip3 install -r /app/requirements.txt
-
-

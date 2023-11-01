@@ -22,6 +22,7 @@ from models._chat import (
     ChatGetRequest,
     ChatInDB,
     ChatInDBCreate,
+    ChatInDBUpdate,
     ChatsGetRequest,
 )
 from models._feedback import (

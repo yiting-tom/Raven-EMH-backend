@@ -127,6 +127,16 @@ class ChatInDBCreate(BaseModel):
     response: str
 
 
+class ChatInDBUpdate(BaseModel):
+    user_id: Optional[str] = None
+    robot_id: Optional[str] = None
+    robot_profile_id: Optional[str] = None
+    parent_id: Optional[str] = None
+    children_ids: Optional[List[str]] = None
+    request: Optional[str] = None
+    response: Optional[str] = None
+
+
 class ChatInDB(ChatInDBCreate):
     id: str
     created_at: datetime = Field(default_factory=datetime.utcnow)

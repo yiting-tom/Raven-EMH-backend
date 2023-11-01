@@ -29,6 +29,7 @@ from models import (
     ChatData,
     ChatInDB,
     ChatInDBCreate,
+    ChatInDBUpdate,
     Filter,
     RobotProfileInCache,
 )
@@ -159,8 +160,14 @@ class ChatService:
             request=chat_data.message,
             response=raw_response,
         )
-
         chat_id: str = self.repo.create_chat(chat_in_db_create)
+
+        # update parent's children_ids
+        if chat_data.parent_id:
+            update_parent_in_db_create = ChatInDBUpdate(
+                children_ids=[chat_id],
+            )
+            self.repo.update_chat(chat_data.parent_id, update_parent_in_db_create)
 
         chat_in_db_resopnse = ChatCreateResponse(
             id=chat_id,
@@ -184,3 +191,28 @@ class ChatService:
         return self.repo.get_chats_by_user_id_and_robot_id(
             user_id, robot_id, order_by=order_by
         )
+
+    async def delete_chat_recursively(self, chat_id: str) -> bool:
+        """
+        Recursively delete a chat object and all its children by its unique ID.
+
+        Args:
+            chat_id (str): The unique ID of the chat object to be deleted.
+
+        Returns:
+            Whether the operation was successful.
+        """
+        if not chat_id:
+            return False
+
+        chat = self.repo.get_chat(chat_id)
+
+        if not chat:
+            return False
+
+        # If the chat has children, delete each child recursively
+        for child_id in chat.children_ids:
+            await self.delete_chat_recursively(child_id)
+
+        # Once all children are deleted, delete the chat itself
+        return self.repo.delete_chat(chat_id)

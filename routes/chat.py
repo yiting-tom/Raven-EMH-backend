@@ -140,3 +140,19 @@ async def get_chats_by_user_id_and_robot_id(user_id, robot_id):
         user_id,
         robot_id,
     )
+
+
+@router.delete("/{chat_id}", status_code=200)
+async def delete_chat(chat_id):
+    """
+    Delete a chat object by its unique ID.
+
+    Args:
+        chat_id (str): The unique ID of the chat object to be deleted.
+
+    Returns:
+        Whether the chat object was successfully deleted.
+    """
+    logger.info(f"Deleting chat with id {chat_id}")
+    result = await chat_service.delete_chat_recursively(chat_id)
+    return result
